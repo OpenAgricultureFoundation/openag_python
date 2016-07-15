@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name='openag_cli',
+    name='openag',
     version='0.1',
-    py_modules=['openag_cli'],
+    py_modules=['openag'],
     install_requires=[
         'click>=6.6',
         'Sphinx>=1.4.5',
@@ -11,7 +11,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'openag=openag_cli:main'
+            'openag=openag:main'
         ]
     }
 )

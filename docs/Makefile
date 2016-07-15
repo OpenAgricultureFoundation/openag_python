@@ -91,9 +91,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/openag_cli.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/openag_python.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/openag_cli.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/openag_python.qhc"
 
 .PHONY: applehelp
 applehelp:
@@ -110,8 +110,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/openag_cli"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/openag_cli"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/openag_python"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/openag_python"
 	@echo "# devhelp"
 
 .PHONY: epub

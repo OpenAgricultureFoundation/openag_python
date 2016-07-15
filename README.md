@@ -1,4 +1,4 @@
-openag\_cli
-===========
+openag\_python
+==============
 
-Command Line Interface for OpenAg software
+Core Python package for the OpenAg software stack
