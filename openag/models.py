@@ -1,6 +1,3 @@
-"""
-This file has an object model in it
-"""
 __all__ = [
     "Environment", "EnvironmentalDataPoint", "FirmwareModule",
     "FirmwareModuleType", "Recipe", "SoftwareModule", "SoftwareModuleType"
