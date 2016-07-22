@@ -6,26 +6,26 @@ import subprocess
 from voluptuous import Invalid
 
 from .codegen import CodeGen
-from ..models import FirmwareModuleType, FirmwareModule
+from openag.models import FirmwareModuleType, FirmwareModule
 
-@click.group()
-def firmware():
+@click.group("firmware")
+def firmware_commands():
     """ Tools for dealing with firmware modules """
     pass
 
-@firmware.command()
+@firmware_commands.command()
 def init():
     raise NotImplementedError()
 
-@firmware.command()
+@firmware_commands.command()
 def run():
     raise NotImplementedError()
 
-@firmware.command()
+@firmware_commands.command()
 def clean():
     raise NotImplementedError()
 
-@firmware.group()
+@firmware_commands.group()
 def module():
     """ Tools for developing an individual module """
     pass

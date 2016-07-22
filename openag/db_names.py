@@ -8,11 +8,16 @@ class DbName:
     ENVIRONMENTAL_DATA_POINT = 'environmental_data_point'
 
 global_dbs = [
+    DbName.RECIPE,
     DbName.SOFTWARE_MODULE_TYPE,
-    DbName.FIRMWARE_MODULE_TYPE
+    DbName.FIRMWARE_MODULE_TYPE,
 ]
 
 per_farm_dbs = [
+    DbName.SOFTWARE_MODULE,
+    DbName.FIRMWARE_MODULE,
     DbName.ENVIRONMENT,
     DbName.ENVIRONMENTAL_DATA_POINT,
 ]
+
+all_dbs = global_dbs + per_farm_dbs
