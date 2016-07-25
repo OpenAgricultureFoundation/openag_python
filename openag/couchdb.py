@@ -1,32 +1,31 @@
+"""
+This module consists of code for interacting with a CouchDB server instance.
+"""
 import os
 import json
 import requests
 from urllib import quote
 from urlparse import urljoin
 
-def folder_to_dict(path):
-    """
-    Recursively reads the files from the directory given by `path` and writes
-    their contents to a nested dictionary, which is then returned.
-    """
-    res = {}
-    for key in os.listdir(path):
-        if key.startswith('.'):
-            continue
-        key_path = os.path.join(path, key)
-        if os.path.isfile(key_path):
-            val = open(key_path).read()
-            key = key.split('.')[0]
-            res[key] = val
-        else:
-            res[key] = folder_to_dict(key_path)
-    return res
-
 class Database(object):
+    """
+    Instances of this class represent individual databases on a CouchDB
+    instance.
+
+    :param server: The Server instance to which this database belongs
+    :param db_name: The name of this database
+    """
     def __init__(self, server, db_name):
         self.server = server
         self.db_name = db_name
         self._cache = {}
+
+    def __contains__(self, doc_id):
+        res = self.server.head(self.db_name+"/"+quote(doc_id, ""))
+        if res.status_code == 200:
+            return True
+        else:
+            return False
 
     def store(self, doc):
         doc_id = doc.get("_id", None)
@@ -109,9 +108,12 @@ class Server(requests.Session):
 
     def replicate(self, source, target, **kwargs):
         data = {
+            "_id": source,
             "source": source,
             "target": target,
         }
+        if data["_id"] in self["_replicator"]:
+            return
         data.update(kwargs)
         res = self.post(
             "_replicator", data=json.dumps(data),
@@ -171,7 +173,7 @@ class Server(requests.Session):
             if db_name.startswith("__") or db_name.startswith("."):
                 continue
             db_path = os.path.join(design_path, db_name)
-            doc = folder_to_dict(db_path)
+            doc = self._folder_to_dict(db_path)
             doc["_id"] = "_design/openag"
             self[db_name].store(doc)
 
@@ -193,3 +195,22 @@ class Server(requests.Session):
     def log_out(self):
         """ Logs out of the CouchDB instance """
         pass
+
+    def _folder_to_dict(self, path):
+        """
+        Recursively reads the files from the directory given by `path` and writes
+        their contents to a nested dictionary, which is then returned.
+        """
+        res = {}
+        for key in os.listdir(path):
+            if key.startswith('.'):
+                continue
+            key_path = os.path.join(path, key)
+            if os.path.isfile(key_path):
+                val = open(key_path).read()
+                key = key.split('.')[0]
+                res[key] = val
+            else:
+                res[key] = self._folder_to_dict(key_path)
+        return res
+

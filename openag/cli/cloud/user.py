@@ -42,7 +42,7 @@ def login(username, password):
     config = Config()
     check_for_cloud_server(config)
     old_username = config["cloud_server"]["username"]
-    if old_username:
+    if old_username and old_username != username:
         raise click.ClickException(
             "Already logged in as user \"{}\". Run `openag cloud user logout` "
             "before attempting to log in as a different user".format(

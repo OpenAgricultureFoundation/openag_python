@@ -1,6 +1,6 @@
 from click import ClickException
 from urllib import quote
-from urlparse import urljoin
+from urlparse import urljoin, urlparse, ParseResult
 
 from ..couchdb import Server
 from ..db_names import global_dbs, per_farm_dbs
@@ -42,6 +42,19 @@ def replicate_per_farm_dbs(config, cloud_url=None, local_url=None, farm_name=Non
     farm_name = farm_name or config["cloud_server"]["farm_name"]
     username = config["cloud_server"]["username"]
     password = config["cloud_server"]["password"]
+
+    # Add credentials to the cloud url
+    parsed_cloud_url = urlparse(cloud_url)
+    if not parsed_cloud_url.username:
+        new_netloc = "{}:{}@{}".format(
+            username, password, parsed_cloud_url.netloc
+        )
+    cloud_url = ParseResult(
+        parsed_cloud_url.scheme, new_netloc, parsed_cloud_url.path,
+        parsed_cloud_url.params, parsed_cloud_url.query,
+        parsed_cloud_url.fragment
+    ).geturl()
+
     server = Server(local_url)
     for db_name in per_farm_dbs:
         remote_db_name = "{}/{}/{}".format(username, farm_name, db_name)

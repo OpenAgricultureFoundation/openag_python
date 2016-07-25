@@ -24,7 +24,7 @@ def init(db_url, api_url):
     server = Server(db_url)
 
     old_db_url = config["local_server"]["url"]
-    if old_db_url:
+    if old_db_url and old_db_url != db_url:
         raise click.ClickException(
             "Local database \"{}\" already initialized. Switching local "
             "databases is not currently supported".format(old_db_url)
@@ -70,4 +70,4 @@ def load_fixture(fixture_file):
     """ Populate the database from a JSON file """
     fixtue = json.load(fixture_file)
     for db_name, items in fixture.items:
-        pass
+        raise NotImplementedError()

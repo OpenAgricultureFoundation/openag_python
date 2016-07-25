@@ -77,7 +77,7 @@ def select(farm_name):
     check_for_cloud_server(config)
     check_for_cloud_user(config)
     old_farm_name = config["cloud_server"]["farm_name"]
-    if old_farm_name:
+    if old_farm_name and old_farm_name != farm_name:
         raise click.ClickException(
             "Farm \"{}\" already selected. Switching farms is not supported "
             "at this time".format(old_farm_name)

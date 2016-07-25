@@ -15,7 +15,7 @@ def init(cloud_url):
     """ Choose a cloud server to use """
     config = Config()
     old_cloud_url = config["cloud_server"]["url"]
-    if old_cloud_url:
+    if old_cloud_url and old_cloud_url != cloud_url:
         raise click.ClickException(
             "Server \"{}\" already selected. Switching cloud servers is not "
             "supported at this time".format(old_cloud_url)
