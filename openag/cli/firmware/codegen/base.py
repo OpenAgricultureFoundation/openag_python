@@ -2,26 +2,110 @@ __all__ = ["Plugin", "CodeGen"]
 
 import itertools
 
-class CodeWriter:
+def FlowManager(start_string, end_string):
+    """
+    A factory for creating context managers for standard code constructions,
+    such as if statements and functions.
+
+    :param str start_string: A format string for the beginning of this code
+    structure
+    :param str end_string: A format string for the end of this code structure
+
+    The constructor of the returned class takes as arguments a `CodeWriter`
+    instance followed by keyword arguments that will be used to format
+    `start_string` and `end_string`
+    """
+    class Inner(object):
+        def __init__(self, f, **kwargs):
+            self.f = f
+            self.kwargs = kwargs
+
+        def __enter__(self):
+            self.f.writeln(start_string.format(**self.kwargs))
+            self.f.indent()
+
+        def __exit__(self, type, value, traceback):
+            self.f.deindent()
+            self.f.writeln(end_string.format(**self.kwargs))
+    return Inner
+
+FunctionManager = FlowManager("{type} {name}({args}) {{", "}}")
+IfManager = FlowManager("if ({condition}) {{", "}}")
+ElseManager = FlowManager("else ({condition}) {{", "}}")
+ElIfManager = FlowManager("else if ({condition}) {{", "}}")
+
+class CodeWriter(object):
     """
     Provides a thin wrapper around a file object to make it easy to maintain
-    consistent indentation when programmaticaly generating code.
+    consistent indentation and write some standard code structures when
+    programmaticaly generating code.
     """
     def __init__(self, f):
         self.f = f
         self.indent_level = 0
 
     def writeln(self, data):
+        """
+        Write a line of text to the file
+
+        :param data: The text to write
+        """
         self.f.write(" "*self.indent_level)
         self.f.write(data + "\n")
 
     def indent(self, levels=1):
+        """
+        Increase the indent level
+
+        :param int levels: The number by which to increase the indent level
+        (defaults to 1)
+        """
         self.indent_level += 2*levels
 
     def deindent(self, levels=1):
+        """
+        Decrease the indent level
+
+        :param int levels: The number by which to decrease the indent level
+        (defaults to 1)
+        """
         self.indent_level -= 2*levels
         if self.indent_level < 0:
             raise ValueError("Can't lower the indent level any further")
+
+    def _function(self, type, name, args=""):
+        """
+        Returns a context manager for writing a function.
+
+        :param str type: The return type of the function
+        :param str name: The name of the functino
+        :param str args: The argument specification for the function
+        """
+        return FunctionManager(self, type=type, name=name, args=args)
+
+    def _if(self, condition):
+        """
+        Returns a context manager for writing an if statement.
+
+        :param str condition: The condition of the if statement
+        """
+        return IfManager(self, condition=condition)
+
+    def _else(self, condition):
+        """
+        Returns a context manager for writing an else statement.
+
+        :param str condition: The condition of the else statement
+        """
+        return ElseManager(self, condition=condition)
+
+    def _elif(self, condition):
+        """
+        Returns a context manager for writing an else if statement.
+
+        :param str condition: The condition of the else if statement
+        """
+        return ElIfManager(self, condition=condition)
 
 class Plugin:
     """
@@ -29,10 +113,17 @@ class Plugin:
     for generating a particular type of code.
     """
     def __init__(self, modules, module_types):
-        self.modules = modules,
+        self.modules = modules
         self.module_types = module_types
 
     def dependencies(self):
+        """
+        Should return a set of the IDs of all of the PlatformIO libraries
+        required by this plugin
+        """
+        return set()
+
+    def header_files(self):
         """
         Should return a set of all of the header files required for this plugin
         to function
@@ -53,24 +144,10 @@ class Plugin:
         """
         pass
 
-    def _pre_setup_module(self, mod_name, f):
-        """
-        Should write to `CodeWriter` instance `f` statements to put right
-        before the module given by `mod_name` is set up
-        """
-        pass
-
     def setup_module(self, mod_name, f):
         """
         Should write to `CodeWriter` instance `f` statements that set up any
         state required for the module given by `mod_name`
-        """
-        pass
-
-    def _post_setup_module(self, mod_name, f):
-        """
-        Should write to `CodeWriter` instance `f` statements to put right after
-        the module given by `mod_name` is set up
         """
         pass
 
@@ -81,32 +158,10 @@ class Plugin:
         """
         pass
 
-    def _pre_update_module(self, mod_name, f):
-        """
-        Should write to `CodeWriter` instance `f` statements to put right
-        before the module given by `mod_name` is updated
-        """
-        pass
-
     def update_module(self, mod_name, f):
         """
         Should write to `CodeWriter` instance `f` statements that update the
         module given by `mod_name`
-        """
-        pass
-
-    def _post_update_module(self, mod_name, f):
-        """
-        Should write to `CodeWriter` instance `f` statements to put right after
-        the module given by `mod_name` is updated
-        """
-        pass
-
-    def _pre_on_output(self, mod_name, output_name, f):
-        """
-        Should write to `CodeWriter` instance `f` statements to put right
-        before an output message from the module `mod_name` on the output
-        `output_name` is processed
         """
         pass
 
@@ -117,13 +172,20 @@ class Plugin:
         """
         pass
 
-    def _post_on_output(self, mod_name, output_name, f):
+    def read_module_status(self, mod_name, f):
         """
-        Should write to `CodeWriter` instance `f` statements to put right after
-        an output message from the module `mod_name` on hte output
-        `output_name` is processed
+        Should write to `CodeWriter` instance `f` statments that handle the
+        current status of the module `mod_name`
         """
         pass
+
+    def msg_name(self, mod_name, output_name):
+        """
+        Returns the name of the message object in the generated code for output
+        `output_name` of the module `mod_name`
+        """
+        return "_".join([mod_name, output_name, "msg"])
+
 
 class CodeGen(Plugin):
     """
@@ -137,10 +199,24 @@ class CodeGen(Plugin):
     schema. All other arguments passed in to the constructor will be
     interpretes as plugins. They should instances of subclasses of `Plugin`.
     """
-    def __init__(self, modules, module_types, *plugins):
+    def __init__(
+        self, modules, module_types, plugins, status_update_interval=1
+    ):
         self.modules = modules
         self.module_types = module_types
-        self.plugins = (self, ) + plugins
+        self.plugins = (self, ) + tuple(plugins)
+        self.status_update_interval = status_update_interval
+
+    def dependencies(self):
+        """
+        Returns a set of IDs of all of the PlatformIO libraries that must be
+        installed for the generated code to work
+        """
+        deps = set()
+        for plugin in self.plugins:
+            deps = deps.union(plugin.dependencies())
+        for dep in deps:
+            subprocess.call
 
     def write_to(self, f):
         """
@@ -149,12 +225,12 @@ class CodeGen(Plugin):
         """
         f = CodeWriter(f)
 
-        # Write all dependencies
-        deps = set()
+        # Write all header files
+        headers = set()
         for plugin in self.plugins:
-            deps = deps.union(plugin.dependencies())
-        for dep in deps:
-            f.writeln("#include <{}>".format(dep))
+            headers = headers.union(plugin.header_files())
+        for header in headers:
+            f.writeln("#include <{}>".format(header))
         f.writeln("")
 
         # Write all declarations
@@ -163,91 +239,90 @@ class CodeGen(Plugin):
         f.writeln("")
 
         # Write the setup function
-        f.writeln("void setup() {")
-        f.indent()
-        for plugin in self.plugins:
-            plugin.setup_plugin(f)
-        for mod_name in self.modules.keys():
+        with f._function("void", "setup"):
+            # Setup all plugins
+            f.writeln("// Setup all plugins")
             for plugin in self.plugins:
-                plugin._pre_setup_module(mod_name, f)
-            for plugin in self.plugins:
-                plugin.setup_module(mod_name, f)
-            for plugin in reversed(self.plugins):
-                plugin._post_setup_module(mod_name, f)
-        f.deindent()
-        f.writeln("}")
+                plugin.setup_plugin(f)
+            # Setup all modules
+            f.writeln("// Setup all modules")
+            for mod_name in self.modules.keys():
+                for plugin in self.plugins:
+                    plugin.setup_module(mod_name, f)
         f.writeln("")
 
         # Write the loop function
-        f.writeln("void loop() {")
-        f.indent()
-        for plugin in self.plugins:
-            plugin.update_plugin(f)
-        for mod_name, mod_info in self.modules.items():
+        with f._function("void", "loop"):
+            # Update all plugins
+            f.writeln("// Update all plugins")
             for plugin in self.plugins:
-                plugin._pre_update_module(mod_name, f)
-            for plugin in self.plugins:
-                plugin.update_module(mod_name, f)
-            for plugin in reversed(self.plugins):
-                plugin._post_update_module(mod_name, f)
-            mod_type = self.module_types[mod_info["type"]]
-            for output_name in mod_type["outputs"]:
+                plugin.update_plugin(f)
+            # Update all modules
+            f.writeln("// Update all modules")
+            for mod_name, mod_info in self.modules.items():
                 for plugin in self.plugins:
-                    plugin._pre_on_output(mod_name, output_name, f)
-                for plugin in self.plugins:
-                    plugin.on_output(mod_name, output_name, f)
-                for plugin in reversed(self.plugins):
-                    plugin._post_on_output(mod_name, output_name, f)
+                    plugin.update_module(mod_name, f)
+                mod_type = self.module_types[mod_info["type"]]
 
-        f.deindent()
-        f.writeln("}")
+                # Read all module outputs
+                for output_name in mod_type["outputs"]:
+                    cond = "{mod_name}.get_{output_name}({msg_name})".format(
+                        mod_name=mod_name, output_name=output_name,
+                        msg_name=self.msg_name(mod_name, output_name)
+                    )
+                    with f._if(cond):
+                        for plugin in self.plugins:
+                            plugin.on_output(mod_name, output_name, f)
+
+            # Read statuses of all modules
+            f.writeln("// Read statuses of all modules")
+            with f._if("should_read_statuses()"):
+                for mod_name in self.modules:
+                    for plugin in self.plugins:
+                        plugin.read_module_status(mod_name, f)
 
     def dependencies(self):
+        return set([345])
+
+    def header_files(self):
         res = set()
         for module_type in self.module_types.values():
             res.add(module_type["header_file"])
-            inputs = module_type["inputs"].values()
-            outputs = module_type["outputs"].values()
-            for item_info in itertools.chain(inputs, outputs):
-                res.add(item_info["type"] + ".h")
         return res
 
     def write_declarations(self, f):
-        for module_name, module_info in self.modules.items():
-            module_type = self.module_types[module_info["type"]]
+        # Define the function should_read_statuses
+        f.writeln("uint32_t last_status_read = 0;")
+        with f._function("bool", "should_read_statuses"):
+            f.writeln("uint32_t curr_time = millis();")
+            f.writeln("bool res = (curr_time - last_status_read) > {};".format(
+                self.status_update_interval*1000
+            ))
+            with f._if("res"):
+                f.writeln("last_status_read = curr_time;")
+            f.writeln("return res;")
+
+        for mod_name, mod_info in self.modules.items():
+            mod_type = self.module_types[mod_info["type"]]
 
             # Define the module itself
             args_str = ", ".join(
                 repr(arg) if not isinstance(arg, bool) else repr(arg).lower()
-                for arg in module_info["arguments"]
+                for arg in mod_info["arguments"]
             )
             if args_str:
                 args_str = "(" + args_str + ")"
-            f.writeln("{cls_name} {obj_name}{args};".format(
-                cls_name=module_type["class_name"], obj_name=module_name,
+            f.writeln("{cls_name} {mod_name}{args};".format(
+                cls_name=mod_type["class_name"], mod_name=mod_name,
                 args=args_str
             ))
 
-            # Define callbacks for all inputs
-            for input_name, input_info in module_type["inputs"].items():
-                cls_name = "::".join(input_info["type"].split("/"))
-                callback_name = "_".join([
-                    module_name, input_name, "callback"
-                ])
-                f.writeln("void {callback_name}(const {cls_name} &msg) {{".format(
-                    callback_name=callback_name, cls_name=cls_name
-                ))
-                f.writeln("  {module_name}.set_{input_name}(msg);".format(
-                    module_name=module_name, input_name=input_name
-                ))
-                f.writeln("}")
-
             # Define messages for all outputs
-            for output_name, output_info in module_type["outputs"].items():
+            for output_name, output_info in mod_type["outputs"].items():
                 cls_name = "::".join(output_info["type"].split("/"))
-                obj_name = "_".join([module_name, output_name, "msg"])
-                f.writeln("{cls_name} {obj_name};".format(
-                    cls_name=cls_name, obj_name=obj_name
+                f.writeln("{cls_name} {msg_name};".format(
+                    cls_name=cls_name,
+                    msg_name=self.msg_name(mod_name, output_name)
                 ))
 
     def setup_module(self, mod_name, f):
@@ -255,14 +330,3 @@ class CodeGen(Plugin):
 
     def update_module(self, mod_name, f):
         f.writeln("{obj_name}.update();".format(obj_name=mod_name))
-
-    def _pre_on_output(self, mod_name, output_name, f):
-        msg_name = "_".join([mod_name, output_name, "msg"])
-        f.writeln("if ({mod_name}.get_{output_name}({msg_name})) {{".format(
-            mod_name=mod_name, output_name=output_name, msg_name=msg_name
-        ))
-        f.indent()
-
-    def _post_on_output(self, mod_name, output_name, f):
-        f.deindent()
-        f.writeln("}")

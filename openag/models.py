@@ -47,25 +47,20 @@ FirmwareModule = Schema({
     Required("type"): Any(str, unicode),
     "environment": Any(str, unicode),
     "arguments": list,
-    "parameters": dict,
     "mappings": dict,
 })
 FirmwareModule.__doc__ = """
 A `firmware module` typically drives a single physical peripheral (sensor or
 actuator) in the system
 
-.. py:attribute:: environment
-    (str, required) The ID of the environment on which this peripheral acts
 .. py:attribute:: type
     (str, required) The ID of the firmware module type of this object
+.. py:attribute:: environment
+    (str, required) The ID of the environment on which this peripheral acts
 .. py:attribute:: arguments
     (list) A list of argument values to pass to the module. There should be
     exactly as many items in this list as there are arguments in the firmware
     module type for this module that don't have a default value.
-.. py:attribute:: parameters
-    (dict) A dictionary mapping parameter name to parameter values. There must
-    be an entry in this dictionary for every required parameter in the firmware
-    module type of this firmware module.
 .. py:attribute:: mappings
     (dict) A dictionary mapping ROS names to different ROS names. Keys are the
     names defined in the firmware module type and values are the names that
@@ -79,7 +74,6 @@ FirmwareModuleType = Schema({
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),
     Required("arguments", default=[]): list,
-    Required("parameters", default={}): dict,
     Required("inputs", default={}): dict,
     Required("outputs", default={}): dict
 })
@@ -104,8 +98,6 @@ database.
     passed to the constructor of the top-level class of this module. The
     dictionaries must contain the fields "name" and "type" (e.g. "int",
     "float") and can contain the fields "description" and "default".
-.. py:attribute parameters
-    (dict)
 .. py:attribute:: inputs
     (dict) A nested dictionary mapping names of ROS topics to which
     this library subscribes to dictionaries containing information about those
