@@ -3,15 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to openag_python's documentation!
-=========================================
+openag_python
+=============
 
-Contents:
+This library is the core of OpenAg's backend software. The code and
+accompanying documentation define many of the standards on which the rest of
+the software is built. It defines the object model for the database, the
+structure of Arduino modules, and a command line interface for interacting
+setting up and interacting with a system.
 
 .. toctree::
    :maxdepth: 2
 
-
+   object_model
+   recipes
+   firmware_modules
 
 Indices and tables
 ==================
