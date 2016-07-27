@@ -200,7 +200,7 @@ class CodeGen(Plugin):
     interpretes as plugins. They should instances of subclasses of `Plugin`.
     """
     def __init__(
-        self, modules, module_types, plugins, status_update_interval=1
+        self, modules, module_types, plugins, status_update_interval=5
     ):
         self.modules = modules
         self.module_types = module_types

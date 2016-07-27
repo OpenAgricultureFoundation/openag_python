@@ -50,17 +50,25 @@ def init(board, project_dir, **kwargs):
     help="The board to use for compilaton. Defaults to megaatmega2560 "
     "(Arduino Mega 2560)"
 )
-@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
-@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
+@click.option(
+    "-c", "--categories", multiple=True, default=["sensors", "actuators"],
+    type=click.Choice(["sensors", "actuators", "calibration"]),
+    help="A list of the categories of inputs and outputs that should be "
+    "enabled"
+)
 @click.option(
     "-d", "--project-dir", default=".",
     help="The directory in which the project should reside"
 )
+@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
+@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
 @click.option(
-    "--status_update_interval", default=1,
+    "--status_update_interval", default=5,
     help="Minimum interval between driver status updates (in seconds)"
 )
-def run(board, target, plugin, project_dir, status_update_interval):
+def run(
+    board, categories, project_dir, plugin, target, status_update_interval
+):
     """ Generate code for this project and run it """
     project_dir = os.path.abspath(project_dir)
 
@@ -81,6 +89,21 @@ def run(board, target, plugin, project_dir, status_update_interval):
             with open(config_path) as f:
                 module_types[dir_name] = FirmwareModuleType(json.load(f))
 
+    # Update the module types using the categories
+    for mod_name, mod_info in module_types.items():
+        for output_name, output_info in mod_info["outputs"].items():
+            for c in output_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["outputs"][output_name]
+        for input_name, input_info in mod_info["inputs"]:
+            for c in input_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["inputs"][input_name]
+
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
@@ -93,7 +116,10 @@ def run(board, target, plugin, project_dir, status_update_interval):
         raise click.ClickException(
             'Plugin "{}" does not exist'.format(e.args[0])
         )
-    codegen = CodeGen(modules, module_types, plugins, status_update_interval)
+    codegen = CodeGen(
+        modules=modules, module_types=module_types, plugins=plugins,
+        status_update_interval=status_update_interval
+    )
     for dep in codegen.dependencies():
         subprocess.call(["platformio", "lib", "install", str(dep)])
     with open(src_file_path, "w+") as f:
@@ -113,14 +139,23 @@ def run(board, target, plugin, project_dir, status_update_interval):
     help="The board to use for compilaton. Defaults to megaatmega2560 "
     "(Arduino Mega 2560)"
 )
-@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
-@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
 @click.option(
-    "--status_update_interval", default=1,
+    "-c", "--categories", multiple=True, default=["sensors", "actuators"],
+    type=click.Choice(["sensors", "actuators", "calibration"]),
+    help="A list of the categories of inputs and outputs that should be "
+    "enabled"
+)
+@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
+@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
+@click.option(
+    "--status_update_interval", default=5,
     help="Minimum interval between driver status updates (in seconds)"
 )
 @click.pass_context
-def run_module(ctx, board, target, plugin, arguments, status_update_interval):
+def run_module(
+    ctx, board, categories, plugin, target, status_update_interval,
+    arguments
+):
     """ Run a single instance of this module """
     # Read the module config
     with open("module.json") as f:
@@ -193,6 +228,6 @@ def run_module(ctx, board, target, plugin, arguments, status_update_interval):
 
     # Run the project
     ctx.invoke(
-        run, board=board, target=target, plugin=plugin, project_dir=build_path,
-        status_update_interval=status_update_interval
+        run, board=board, categories=categories, plugin=plugin, target=target,
+        project_dir=build_path, status_update_interval=status_update_interval
     )
