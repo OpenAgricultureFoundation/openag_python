@@ -1,8 +1,8 @@
 import click
 
 from openag.couchdb import Server
-from ..config import Config
-from ..utils import check_for_cloud_server, check_for_cloud_user
+from config import Config
+from utils import check_for_cloud_server, check_for_cloud_user
 
 @click.group()
 def user():
@@ -11,7 +11,7 @@ def user():
 
 @user.command()
 def show():
-    """ Show info about your user account """
+    """ Shows the name of the current user """
     config = Config()
     check_for_cloud_server()
     check_for_cloud_user()
@@ -26,7 +26,10 @@ def show():
     help="Password for the account"
 )
 def register(username, password):
-    """ Create a new user account """
+    """
+    Create a new user account. Creates a user account with the given
+    credentials on the selected cloud server.
+    """
     config = Config()
     check_for_cloud_server()
     server = Server(config["cloud_server"]["url"])

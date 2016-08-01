@@ -19,7 +19,12 @@ def db():
 @click.option("--db_url", default="http://localhost:5984")
 @click.option("--api_url", default="http://localhost:5000")
 def init(db_url, api_url):
-    """ Initialize the database """
+    """
+    Initialize the database server. Sets some configuration parameters on the
+    server, creates the necessary databases for this project, pushes design
+    documents into those databases, and sets up replication with the cloud
+    server if one has already been selected.
+    """
     config = Config()
     db_config = generate_config(api_url)
     server = Server(db_url)
@@ -68,7 +73,12 @@ def init(db_url, api_url):
 @db.command()
 @click.argument("fixture_file", type=click.File())
 def load_fixture(fixture_file):
-    """ Populate the database from a JSON file """
+    """
+    Populate the database from a JSON file. Reads the JSON file FIXTURE_FILE
+    and uses it to populate the database. Fuxture files should consist of a
+    dictionary mapping database names to arrays of objects to store in those
+    databases.
+    """
     check_for_local_server()
     local_url = config["local_server"]["url"]
     server = Server(local_url)

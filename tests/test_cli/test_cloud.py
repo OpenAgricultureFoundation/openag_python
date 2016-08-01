@@ -9,7 +9,7 @@ from tests import mock_config
 
 from openag.db_names import global_dbs
 from openag.couchdb import Server
-from openag.cli.cloud import init, show, remove
+from openag.cli.cloud import init, show, deinit
 
 @mock.patch.object(Server, "replicate")
 def test_cloud_without_local_server(replicate):
@@ -26,8 +26,8 @@ def test_cloud_without_local_server(replicate):
     # Show -- Should raise an error because there is no cloud server
     assert runner.invoke(show).exit_code
 
-    # Remove -- Should raise an error because there is no cloud server
-    result = runner.invoke(remove)
+    # Deinit -- Should raise an error because there is no cloud server
+    result = runner.invoke(deinit)
     assert result.exit_code
 
     # Init -- Should work but not replicate any DBs
@@ -37,8 +37,8 @@ def test_cloud_without_local_server(replicate):
     # Show -- Should work
     assert runner.invoke(show).exit_code == 0
 
-    # Remove -- Should work and not cancel any replications
-    assert runner.invoke(remove).exit_code == 0
+    # Deinit -- Should work and not cancel any replications
+    assert runner.invoke(deinit).exit_code == 0
     assert replicate.call_count == 0
 
     # Show -- Should raise an error becuase there is no cloud server
@@ -62,8 +62,8 @@ def test_cloud_with_local_server(replicate, m):
     # Show -- Should raise an error because there is no cloud server
     assert runner.invoke(show).exit_code
 
-    # Remove -- Should raise an error because there is no cloud server
-    result = runner.invoke(remove)
+    # Deinit -- Should raise an error because there is no cloud server
+    result = runner.invoke(deinit)
     assert result.exit_code
 
     # Init -- Should work but not replicate any DBs
@@ -79,8 +79,8 @@ def test_cloud_with_local_server(replicate, m):
     # Show -- Should work
     assert runner.invoke(show).exit_code == 0
 
-    # Remove -- Should work and not cancel any replications
-    assert runner.invoke(remove).exit_code == 0
+    # Deinit -- Should work and not cancel any replications
+    assert runner.invoke(deinit).exit_code == 0
     assert replicate.call_count == len(global_dbs)
 
     # Show -- Should raise an error becuase there is no cloud server

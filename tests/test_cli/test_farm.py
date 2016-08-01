@@ -10,7 +10,7 @@ from tests import mock_config
 
 from openag.couchdb import Server
 from openag.db_names import per_farm_dbs
-from openag.cli.cloud.farm import show, create, list, select, unselect
+from openag.cli.farm import show, create, list, init, deinit
 
 def test_farm_without_cloud_server():
     runner = CliRunner()
@@ -29,11 +29,11 @@ def test_farm_without_cloud_server():
     # List -- Should raise an error because there is no cloud server
     assert runner.invoke(list).exit_code
 
-    # Select -- Should raise an error because there is no cloud server
-    assert runner.invoke(select).exit_code
+    # Init -- Should raise an error because there is no cloud server
+    assert runner.invoke(init).exit_code
 
-    # Remove -- Should raise an error because there is no cloud server
-    assert runner.invoke(unselect).exit_code
+    # Deinit -- Should raise an error because there is no cloud server
+    assert runner.invoke(deinit).exit_code
 
 def test_farm_without_user():
     runner = CliRunner()
@@ -55,11 +55,11 @@ def test_farm_without_user():
     # List -- Should raise an error because the user is not logged in
     assert runner.invoke(list).exit_code
 
-    # Select -- Should raise an error becuase the user is not logged in
-    assert runner.invoke(select).exit_code
+    # Init -- Should raise an error becuase the user is not logged in
+    assert runner.invoke(init).exit_code
 
-    # Remove -- Should raise an error because no farm is selected
-    assert runner.invoke(unselect).exit_code
+    # Deinit -- Should raise an error because no farm is selected
+    assert runner.invoke(deinit).exit_code
 
 @requests_mock.Mocker()
 def test_farm_with_only_cloud_server(m):
@@ -99,8 +99,8 @@ def test_farm_with_only_cloud_server(m):
     # Show -- Should raise an error because no farm is selected
     assert runner.invoke(show).exit_code
 
-    # Select -- Should work
-    assert runner.invoke(select, ["test"]).exit_code == 0
+    # Init -- Should work
+    assert runner.invoke(init, ["test"]).exit_code == 0
 
     # Show -- Should work and output "test"
     assert runner.invoke(show).exit_code == 0
@@ -108,8 +108,8 @@ def test_farm_with_only_cloud_server(m):
     # List -- Should have an asterisk before "test"
     assert runner.invoke(list).output == "*test\n"
 
-    # Unselect -- Should work
-    assert runner.invoke(unselect).exit_code == 0
+    # Deinit -- Should work
+    assert runner.invoke(deinit).exit_code == 0
 
     # Show -- Should raise an error because no farm is selected
     assert runner.invoke(show).exit_code
@@ -133,12 +133,12 @@ def test_farm_with_cloud_and_local_server(replicate, m):
         }
     })
 
-    # Select -- Should replicate per farm DBs
+    # Init -- Should replicate per farm DBs
     m.get("http://localhost:5984/_all_dbs", text="[]")
-    assert runner.invoke(select, ["test"]).exit_code == 0
+    assert runner.invoke(init, ["test"]).exit_code == 0
     assert replicate.call_count == len(per_farm_dbs)
     replicate.reset_mock()
 
-    # Deselect -- Should cancel replication of per farm DBs
-    assert runner.invoke(unselect).exit_code == 0
+    # Deinit -- Should cancel replication of per farm DBs
+    assert runner.invoke(deinit).exit_code == 0
     assert replicate.call_count == len(per_farm_dbs)

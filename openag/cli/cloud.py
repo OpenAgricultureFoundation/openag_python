@@ -1,17 +1,17 @@
 import click
 from urlparse import urlparse
 
-from .farm import unselect as unselect_farm
-from ..utils import *
-from ..config import config
+from farm import deinit as deinit_farm
+from utils import *
+from config import config
 
 @click.group()
 def cloud():
     """
-    Manage your cloud configuration.
+    Select a cloud server to use.
 
-    Provides commands for selecting a cloud server with which to exchange data
-    and setting up that exchange.
+    Provides commands for selecting a cloud server with which to exchange grow
+    data.
     """
     pass
 
@@ -26,7 +26,7 @@ def init(cloud_url):
     old_cloud_url = config["cloud_server"]["url"]
     if old_cloud_url and old_cloud_url != cloud_url:
         raise click.ClickException(
-            'Server "{}" already selected. Call `openag cloud remove` to '
+            'Server "{}" already selected. Call `openag cloud deinit` to '
             'detach from that server before selecting a new one'.format(
                 old_cloud_url
             )
@@ -41,7 +41,8 @@ def init(cloud_url):
 @cloud.command()
 def show():
     """
-    Shows the URL of the current cloud server
+    Shows the URL of the current cloud server or throws an error if no cloud
+    server is selected
     """
     check_for_cloud_server()
     click.echo("Using cloud server at \"{}\"".format(
@@ -50,7 +51,7 @@ def show():
 
 @cloud.command()
 @click.pass_context
-def remove(ctx):
+def deinit(ctx):
     """
     Detach from the current cloud server
     """
@@ -60,10 +61,5 @@ def remove(ctx):
             cloud_url=config["cloud_server"]["url"], cancel=True
         )
         if config["cloud_server"]["farm_name"]:
-            ctx.invoke(unselect_farm)
+            ctx.invoke(deinit_farm)
     del config["cloud_server"]["url"]
-
-from .user import user
-from .farm import farm
-cloud.add_command(user)
-cloud.add_command(farm)

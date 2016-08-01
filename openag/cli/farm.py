@@ -1,8 +1,8 @@
 import click
 
 from openag.couchdb import Server
-from ..utils import *
-from ..config import config
+from utils import *
+from config import config
 
 @click.group()
 def farm():
@@ -11,7 +11,10 @@ def farm():
 
 @farm.command()
 def show():
-    """ Show the current configuration """
+    """
+    Show the current configuration. Shows the name of the current user and the
+    name of the selected farm.
+    """
     check_for_cloud_server()
     check_for_cloud_user()
     check_for_cloud_farm()
@@ -25,7 +28,11 @@ def show():
 @farm.command()
 @click.argument("farm_name")
 def create(farm_name):
-    """ Create a farm """
+    """
+    Create a farm. Creates a farm named FARM_NAME on the currently selected
+    cloud server. You can use the `openag farm select` command to start
+    mirroring data into it.
+    """
     check_for_cloud_server()
     check_for_cloud_user()
     server = Server(config["cloud_server"]["url"])
@@ -47,7 +54,10 @@ def create(farm_name):
 
 @farm.command()
 def list():
-    """ List all farms you can manage """
+    """
+    List all farms you can manage. If you have selected a farm already, the
+    name of that farm will be prefixed with an asterisk in the returned list.
+    """
     check_for_cloud_server()
     check_for_cloud_user()
     server = Server(config["cloud_server"]["url"])
@@ -57,7 +67,7 @@ def list():
     farms_list = server.get_user_info().get("farms", [])
     if not len(farms_list):
         raise click.ClickException(
-            "No farms exist. Run `openag cloud farms create` to create one"
+            "No farms exist. Run `openag farm create` to create one"
         )
     active_farm_name = config["cloud_server"]["farm_name"]
     for farm_name in farms_list:
@@ -68,24 +78,29 @@ def list():
 
 @farm.command()
 @click.argument("farm_name")
-def select(farm_name):
-    """ Select a farm to manage """
+def init(farm_name):
+    """
+    Select a farm to use. This command sets up the replication between your
+    local database and the selected cloud server if you have already
+    initialized your local database with the `openag db init` command.
+    """
     check_for_cloud_server()
     check_for_cloud_user()
     old_farm_name = config["cloud_server"]["farm_name"]
     if old_farm_name and old_farm_name != farm_name:
         raise click.ClickException(
-            "Farm \"{}\" already selected. Switching farms is not supported "
-            "at this time".format(old_farm_name)
+            "Farm \"{}\" already initialized. Run `openag farm deinit` to "
+            "deinitialize it".format(old_farm_name)
         )
     if config["local_server"]["url"]:
         replicate_per_farm_dbs(config, farm_name=farm_name)
     config["cloud_server"]["farm_name"] = farm_name
 
 @farm.command()
-def unselect():
+def deinit():
     """
-    Detach from the current farm
+    Detach from the current farm. Cancels the replication between your local
+    server and the cloud instance if it is set up.
     """
     check_for_cloud_server()
     check_for_cloud_user()

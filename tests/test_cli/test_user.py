@@ -6,7 +6,7 @@ import requests_mock
 
 from tests import mock_config
 
-from openag.cli.cloud.user import show, register, login, logout
+from openag.cli.user import show, register, login, logout
 
 def test_user_without_cloud_server():
     runner = CliRunner()
