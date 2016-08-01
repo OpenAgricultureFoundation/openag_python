@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import click
 
@@ -68,6 +69,11 @@ def init(db_url, api_url):
 @click.argument("fixture_file", type=click.File())
 def load_fixture(fixture_file):
     """ Populate the database from a JSON file """
-    fixtue = json.load(fixture_file)
-    for db_name, items in fixture.items:
-        raise NotImplementedError()
+    check_for_local_server()
+    local_url = config["local_server"]["url"]
+    server = Server(local_url)
+    fixture = json.load(fixture_file)
+    for db_name, items in fixture.items():
+        db = server[db_name]
+        for item in items:
+            db.store(item)

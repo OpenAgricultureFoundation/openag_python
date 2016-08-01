@@ -13,8 +13,8 @@ def user():
 def show():
     """ Show info about your user account """
     config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
     click.echo(
         "Logged in as user \"{}\"".format(config["cloud_server"]["username"])
     )
@@ -28,7 +28,7 @@ def show():
 def register(username, password):
     """ Create a new user account """
     config = Config()
-    check_for_cloud_server(config)
+    check_for_cloud_server()
     server = Server(config["cloud_server"]["url"])
     server.create_user(username, password)
 
@@ -40,7 +40,7 @@ def register(username, password):
 def login(username, password):
     """ Log into your user account """
     config = Config()
-    check_for_cloud_server(config)
+    check_for_cloud_server()
     old_username = config["cloud_server"]["username"]
     if old_username and old_username != username:
         raise click.ClickException(
@@ -58,7 +58,7 @@ def login(username, password):
 def logout():
     """ Log out of your user account """
     config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
     del config["cloud_server"]["username"]
     del config["cloud_server"]["password"]

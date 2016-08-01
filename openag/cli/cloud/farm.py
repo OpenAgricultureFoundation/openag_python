@@ -2,7 +2,7 @@ import click
 
 from openag.couchdb import Server
 from ..utils import *
-from ..config import Config
+from ..config import config
 
 @click.group()
 def farm():
@@ -12,10 +12,9 @@ def farm():
 @farm.command()
 def show():
     """ Show the current configuration """
-    config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
-    check_for_cloud_farm(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
+    check_for_cloud_farm()
     click.echo(
         "Using farm \"{}\" under user \"{}\"".format(
             config["cloud_server"]["farm_name"],
@@ -27,9 +26,8 @@ def show():
 @click.argument("farm_name")
 def create(farm_name):
     """ Create a farm """
-    config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
     server = Server(config["cloud_server"]["url"])
     username = config["cloud_server"]["username"]
     password = config["cloud_server"]["password"]
@@ -50,16 +48,15 @@ def create(farm_name):
 @farm.command()
 def list():
     """ List all farms you can manage """
-    config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
     server = Server(config["cloud_server"]["url"])
     server.log_in(
         config["cloud_server"]["username"], config["cloud_server"]["password"]
     )
     farms_list = server.get_user_info().get("farms", [])
     if not len(farms_list):
-        click.echo(
+        raise click.ClickException(
             "No farms exist. Run `openag cloud farms create` to create one"
         )
     active_farm_name = config["cloud_server"]["farm_name"]
@@ -73,9 +70,8 @@ def list():
 @click.argument("farm_name")
 def select(farm_name):
     """ Select a farm to manage """
-    config = Config()
-    check_for_cloud_server(config)
-    check_for_cloud_user(config)
+    check_for_cloud_server()
+    check_for_cloud_user()
     old_farm_name = config["cloud_server"]["farm_name"]
     if old_farm_name and old_farm_name != farm_name:
         raise click.ClickException(
@@ -83,5 +79,18 @@ def select(farm_name):
             "at this time".format(old_farm_name)
         )
     if config["local_server"]["url"]:
-        replicate_par_farm_dbs(config, farm_name=farm_name)
+        replicate_per_farm_dbs(config, farm_name=farm_name)
     config["cloud_server"]["farm_name"] = farm_name
+
+@farm.command()
+def unselect():
+    """
+    Detach from the current farm
+    """
+    check_for_cloud_server()
+    check_for_cloud_user()
+    check_for_cloud_farm()
+    farm_name = config["cloud_server"]["farm_name"]
+    if farm_name and config["local_server"]["url"]:
+        replicate_per_farm_dbs(config, farm_name=farm_name)
+    config["cloud_server"]["farm_name"] = None

@@ -57,7 +57,7 @@ class Database(object):
                     data=json.dumps(doc_to_store)
                 )
                 if (created and res.status_code == 201) or \
-                        (not create and res.status_code == 200):
+                        (not created and res.status_code == 200):
                     return res.json()
                 else:
                     raise RuntimeError(
@@ -94,7 +94,7 @@ class Server(requests.Session):
 
     def __getitem__(self, db_name):
         if not db_name in self:
-            raise ValueError("No such database exists")
+            raise ValueError("Database \"{}\" does not exist".format(db_name))
         if not db_name in self.dbs:
             self.dbs[db_name] = Database(self, db_name)
         return self.dbs[db_name]
@@ -106,7 +106,9 @@ class Server(requests.Session):
         url = urljoin(self.url, url)
         return super(Server, self).request(method, url, **kwargs)
 
-    def replicate(self, source, target, **kwargs):
+    def replicate(self, source, target, cancel=False, **kwargs):
+        if cancel:
+            raise NotImplementedError()
         data = {
             "_id": source,
             "source": source,

@@ -47,6 +47,12 @@ class Config(PersistentObj):
         except IOError:
             self._data = {}
 
+    def __iter__(self):
+        for key in self._data:
+            yield key
+
     def _save(self):
         with open(CONFIG_FILE, "w+") as f:
             json.dump(self._data, f)
+
+config = Config()
