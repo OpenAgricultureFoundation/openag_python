@@ -11,10 +11,8 @@ class ROSCommPlugin(Plugin):
             'ros::Publisher pub_diagnostics("/diagnostics", &status_msg);'
         )
         for mod_name, mod_info in self.modules.items():
-            mod_type = self.module_types[mod_info["type"]]
-
             # Define publishers for all outputs
-            for output_name in mod_type["outputs"]:
+            for output_name in mod_info["outputs"]:
                 f.writeln(
                     'ros::Publisher {pub_name}('
                         '"{output_topic}", &{msg_name}'
@@ -26,7 +24,7 @@ class ROSCommPlugin(Plugin):
                 )
 
             # Define callbacks and subscribers for all inputs
-            for input_name, input_info in mod_type["inputs"].items():
+            for input_name, input_info in mod_info["inputs"].items():
                 cls_name = "::".join(input_info["type"].split("/"))
                 arguments = "const {cls_name} &msg".format(cls_name=cls_name)
                 callback_name = self.callback_name(mod_name, input_name)
@@ -50,12 +48,12 @@ class ROSCommPlugin(Plugin):
         f.writeln("nh.initNode();")
 
     def setup_module(self, mod_name, f):
-        mod_type = self.module_types[self.modules[mod_name]["type"]]
-        for output_name in mod_type["outputs"]:
+        mod_info = self.modules[mod_name]
+        for output_name in mod_info["outputs"]:
             f.writeln("nh.advertise({pub_name});".format(
                 pub_name=self.pub_name(mod_name, output_name)
             ))
-        for input_name in mod_type["inputs"]:
+        for input_name in mod_info["inputs"]:
             f.writeln("nh.subscribe({sub_name});".format(
                 sub_name=self.sub_name(mod_name, input_name)
             ))
@@ -95,11 +93,13 @@ class ROSCommPlugin(Plugin):
         return "_".join([mod_name, input_name, "callback"])
 
     def output_topic(self, mod_name, output_name):
+        mapped_output_name = self.modules[mod_name]["outputs"][output_name]["mapped_name"]
         return "/sensors/{mod_name}_{output_name}".format(
-            mod_name=mod_name, output_name=output_name
+            mod_name=mod_name, output_name=mapped_output_name
         )
 
     def input_topic(self, mod_name, input_name):
+        mapped_input_name = self.modules[mod_name]["inputs"][input_name]["mapped_name"]
         return "/actuators/{mod_name}_{input_name}".format(
-            mod_name=mod_name, input_name=input_name
+            mod_name=mod_name, input_name=mapped_input_name
         )

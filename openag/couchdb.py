@@ -18,7 +18,7 @@ class Database(object):
     def __init__(self, server, db_name):
         self.server = server
         self.db_name = db_name
-        self._cache = {}
+        self.docs = None
 
     def __contains__(self, doc_id):
         res = self.server.head(self.db_name+"/"+quote(doc_id, ""))
@@ -26,6 +26,26 @@ class Database(object):
             return True
         else:
             return False
+
+    def __iter__(self):
+        if not self.docs:
+            self._fetch()
+        return iter(self.docs)
+
+    def __getitem__(self, key):
+        if not self.docs:
+            self._fetch()
+        return self.docs[key]
+
+    def _fetch(self):
+        self.docs = {}
+        res = self.server.get(
+            "/".join([self.db_name, "_all_docs"]), params={
+                "include_docs": True
+            }
+        ).json()
+        for row in res["rows"]:
+            self.docs[row["id"]] = row["doc"]
 
     def store(self, doc):
         doc_id = doc.get("_id", None)
@@ -144,7 +164,11 @@ class Server(requests.Session):
                 "farms": []
             })
         )
-        if res.status_code != 201:
+        if res.status_code == 409:
+            raise RuntimeError(
+                'The username "{}" is already taken'.format(username)
+            )
+        elif res.status_code != 201:
             raise RuntimeError(
                 "Failed to create user ({}): {}".format(
                     res.status_code, res.content

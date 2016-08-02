@@ -7,7 +7,7 @@ from openag import _design
 from openag.couchdb import Server
 from openag.db_names import all_dbs
 from ..utils import *
-from ..config import Config
+from ..config import config
 from .db_config import generate_config
 
 @click.group()
@@ -25,7 +25,6 @@ def init(db_url, api_url):
     documents into those databases, and sets up replication with the cloud
     server if one has already been selected.
     """
-    config = Config()
     db_config = generate_config(api_url)
     server = Server(db_url)
 

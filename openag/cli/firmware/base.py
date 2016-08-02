@@ -112,9 +112,8 @@ class Plugin:
     Base class for plugins for the top-level CodeGen class that are responsible
     for generating a particular type of code.
     """
-    def __init__(self, modules, module_types):
+    def __init__(self, modules):
         self.modules = modules
-        self.module_types = module_types
 
     def dependencies(self):
         """
@@ -199,24 +198,19 @@ class CodeGen(Plugin):
     schema. All other arguments passed in to the constructor will be
     interpretes as plugins. They should instances of subclasses of `Plugin`.
     """
-    def __init__(
-        self, modules, module_types, plugins, status_update_interval=5
-    ):
+    def __init__(self, modules, plugins, status_update_interval=5):
         self.modules = modules
-        self.module_types = module_types
         self.plugins = (self, ) + tuple(plugins)
         self.status_update_interval = status_update_interval
 
-    def dependencies(self):
-        """
-        Returns a set of IDs of all of the PlatformIO libraries that must be
-        installed for the generated code to work
-        """
+    def all_dependencies(self):
         deps = set()
         for plugin in self.plugins:
             deps = deps.union(plugin.dependencies())
-        for dep in deps:
-            subprocess.call
+        for mod_info in self.modules.values():
+            if "pio_id" in mod_info:
+                deps.add(mod_info["pio_id"])
+        return deps
 
     def write_to(self, f):
         """
@@ -262,10 +256,9 @@ class CodeGen(Plugin):
             for mod_name, mod_info in self.modules.items():
                 for plugin in self.plugins:
                     plugin.update_module(mod_name, f)
-                mod_type = self.module_types[mod_info["type"]]
 
                 # Read all module outputs
-                for output_name in mod_type["outputs"]:
+                for output_name in mod_info["outputs"]:
                     cond = "{mod_name}.get_{output_name}({msg_name})".format(
                         mod_name=mod_name, output_name=output_name,
                         msg_name=self.msg_name(mod_name, output_name)
@@ -286,8 +279,8 @@ class CodeGen(Plugin):
 
     def header_files(self):
         res = set()
-        for module_type in self.module_types.values():
-            res.add(module_type["header_file"])
+        for mod_info in self.modules.values():
+            res.add(mod_info["header_file"])
         return res
 
     def write_declarations(self, f):
@@ -303,8 +296,6 @@ class CodeGen(Plugin):
             f.writeln("return res;")
 
         for mod_name, mod_info in self.modules.items():
-            mod_type = self.module_types[mod_info["type"]]
-
             # Define the module itself
             args_str = ", ".join(
                 repr(arg) if not isinstance(arg, bool) else repr(arg).lower()
@@ -313,12 +304,12 @@ class CodeGen(Plugin):
             if args_str:
                 args_str = "(" + args_str + ")"
             f.writeln("{cls_name} {mod_name}{args};".format(
-                cls_name=mod_type["class_name"], mod_name=mod_name,
+                cls_name=mod_info["class_name"], mod_name=mod_name,
                 args=args_str
             ))
 
             # Define messages for all outputs
-            for output_name, output_info in mod_type["outputs"].items():
+            for output_name, output_info in mod_info["outputs"].items():
                 cls_name = "::".join(output_info["type"].split("/"))
                 f.writeln("{cls_name} {msg_name};".format(
                     cls_name=cls_name,

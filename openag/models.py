@@ -3,10 +3,10 @@ __all__ = [
     "FirmwareModuleType", "Recipe", "SoftwareModule", "SoftwareModuleType"
 ]
 
-from voluptuous import Schema, Required, Any, Extra
+from voluptuous import Schema, Required, Any, Extra, REMOVE_EXTRA
 
 Environment = Schema({
-})
+}, extra=REMOVE_EXTRA)
 Environment.__doc__ = """
 An :class:`Environment` abstractly represents a single homogenous
 climate-controlled volume within a system. A food computer usually consists of
@@ -20,7 +20,7 @@ EnvironmentalDataPoint = Schema({
     Required("is_desired"): bool,
     "value": object,
     Required("timestamp"): float,
-})
+}, extra=REMOVE_EXTRA)
 EnvironmentalDataPoint.__doc__ = """
 An `EnvironmentalDataPoint` represents a single measurement or event in an
 `Environment`, such as a single air temperature measurement or the start of a
@@ -57,7 +57,7 @@ recipe.
 Recipe = Schema({
     Required("format"): Any(str, unicode),
     Required("operations"): object
-})
+}, extra=REMOVE_EXTRA)
 Recipe.__doc__ = """
 In order to allow for recipes to evolve, we have developed a very generic
 recipe model. The idea behind the model is that the system runs a recipe
@@ -92,10 +92,10 @@ Output = Schema({
 
 FirmwareArgument = Schema({
     Required("name"): Any(str, unicode),
-    "type": ["int", "float", "bool", "str"],
+    "type": Any("int", "float", "bool", "str"),
     "description": Any(str, unicode),
     "default": object,
-})
+}, extra=REMOVE_EXTRA)
 FirmwareModuleType = Schema({
     "pio_id": int,
     Required("header_file"): Any(str, unicode),
@@ -104,7 +104,7 @@ FirmwareModuleType = Schema({
     Required("arguments", default=[]): [FirmwareArgument],
     Required("inputs", default={}): {Extra: Input},
     Required("outputs", default={}): {Extra: Output},
-})
+}, extra=REMOVE_EXTRA)
 FirmwareModuleType.__doc__ = """
 A :class:`FirmwareModuleType` represents a firmware library for interfacing
 with a particular system peripheral. It is essentially a driver for a sensor or
@@ -166,7 +166,7 @@ FirmwareModule = Schema({
     "environment": Any(str, unicode),
     "arguments": [object],
     "mappings": dict,
-})
+}, extra=REMOVE_EXTRA)
 FirmwareModule.__doc__ = """
 A :class:`FirmwareModule` is a single instance of a
 :class:`~openag.models.FirmwareModuleType` usually configured to control a
@@ -200,13 +200,13 @@ single physical sensor or actuator.
 
 SoftwareArgument = Schema({
     Required("name"): Any(str, unicode),
-    "type": ["int", "float", "bool", "str"],
+    "type": Any("int", "float", "bool", "str"),
     "description": Any(str, unicode),
     "default": object,
     Required("required", default=False): bool
 })
 Parameter = Schema({
-    "type": ["int", "float", "bool", "str"],
+    "type": Any("int", "float", "bool", "str"),
     "description": Any(str, unicode),
     "default": object,
     Required("required", default=False): bool
@@ -219,7 +219,7 @@ SoftwareModuleType = Schema({
     Required("parameters", default={}): {Extra: Parameter},
     Required("inputs", default={}): {Extra: Input},
     Required("outputs", default={}): {Extra: Output}
-})
+}, extra=REMOVE_EXTRA)
 SoftwareModuleType.__doc__ = """
 A :class:`SoftwareModuleType` is a ROS node that can be run on the controller
 for the farm (e.g. Raspberry Pi). It can listen to ROS topics, publish to ROS
@@ -290,7 +290,7 @@ SoftwareModule = Schema({
     "arguments": [object],
     "parameters": dict,
     "mappings": dict
-})
+}, extra=REMOVE_EXTRA)
 SoftwareModule.__doc__ = """
 A :class:`SoftwareModule` is a single instance of a
 :class:`~openag.models.SoftwareModuleType`.

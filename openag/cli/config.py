@@ -1,3 +1,27 @@
+"""
+The command line interface requires some persistent global state to operate
+effectively. It stores this state in a JSON file in a hidden directory in the
+user's home folder. The following is a record of all of the keys in that JSON
+file and what they mean.
+
+config["cloud_server"] - Holds information about the cloud CouchDB instance
+selected by the current user
+
+config["cloud_server"]["url"] - The URL of the cloud server (e.g.
+"http://openag.mit.edu:5984")
+
+config["cloud_server"]["username"] and
+config["cloud_server"]["password"] - The credentials with which to log in to
+the cloud server
+
+config["cloud_server"]["farm_name"] - The name of the farm on the cloud server
+into which to mirror data
+
+config["local_server"] - Holds information about the local CouchDB instance
+selected by the current user
+
+config["local_server"]["url"] - The URL of the local server
+"""
 import os
 import json
 import errno

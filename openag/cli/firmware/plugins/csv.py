@@ -9,9 +9,9 @@ class CSVCommPlugin(Plugin):
         with f._if("Serial.available()"):
             f.writeln("String in_str = Serial.readString();")
             for mod_name, mod_info in self.modules.items():
-                mod_type = self.module_types[mod_info["type"]]
-                for input_name, input_info in mod_type["inputs"].items():
-                    prefix="{},{},".format(mod_name, input_name)
+                for input_name, input_info in mod_info["inputs"].items():
+                    mapped_input_name = input_info["mapped_name"]
+                    prefix="{},{},".format(mod_name, mapped_input_name)
                     with f._if('in_str.startsWith("{}")'.format(prefix)):
                         input_type = input_info["type"]
                         if input_type == "std_msgs/Bool":
@@ -37,8 +37,9 @@ class CSVCommPlugin(Plugin):
                             )
 
     def on_output(self, mod_name, output_name, f):
+        real_output_name = self.modules[mod_name]["outputs"][output_name]["mapped_name"]
         f.writeln('Serial.print("data,{mod_name},{output_name},");'.format(
-            mod_name=mod_name, output_name=output_name
+            mod_name=mod_name, output_name=real_output_name
         ))
         f.writeln('Serial.println({msg_name}.data);'.format(
             msg_name=self.msg_name(mod_name, output_name)

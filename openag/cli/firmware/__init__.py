@@ -3,11 +3,49 @@ import sys
 import json
 import click
 import subprocess
+from importlib import import_module
 from voluptuous import Invalid
 
-from .codegen import CodeGen
-from .codegen.plugins import plugin_map
+from base import CodeGen
+from plugins import plugin_map
+from ..config import config
 from openag.models import FirmwareModuleType, FirmwareModule
+from openag.couchdb import Server
+from openag.db_names import FIRMWARE_MODULE_TYPE
+
+def board_option(f):
+    f = click.option(
+        "-b", "--board", default="megaatmega2560",
+        help="The board to use for compilation. Defaults to megaatmega2560 "
+        "(Arduino Mega 2560)"
+    )(f)
+    return f
+
+def project_dir_option(f):
+    f = click.option(
+        "-d", "--project-dir", default=".",
+        help="The directory in which the project should reside"
+    )(f)
+    return f
+
+def codegen_options(f):
+    f = click.option(
+        "-c", "--categories", multiple=True, default=["sensors", "actuators"],
+        type=click.Choice(["sensors", "actuators", "calibration"]),
+        help="A list of the categories of inputs and outputs that should "
+        "be enabled"
+    )(f)
+    f = click.option(
+        "-p", "--plugin", multiple=True, help="Enable a specific plugin"
+    )(f)
+    f = click.option(
+        "-t", "--target", help="PlatformIO target (e.g.  upload)"
+    )(f)
+    f = click.option(
+        "--status_update_interval", default=5,
+        help="Minimum interval between driver status updates (in seconds)"
+    )(f)
+    return f
 
 @click.group("firmware")
 def firmware():
@@ -15,15 +53,8 @@ def firmware():
     pass
 
 @firmware.command()
-@click.option(
-    "-b", "--board", default="megaatmega2560",
-    help="The board to use for compilation. Defaults to megaatmega2560 "
-    "(Arduino Mega 2560)"
-)
-@click.option(
-    "-d", "--project-dir", default=".",
-    help="The directory in which the project should reside"
-)
+@board_option
+@project_dir_option
 def init(board, project_dir, **kwargs):
     """ Initialize an OpenAg-based project """
     project_dir = os.path.abspath(project_dir)
@@ -45,40 +76,27 @@ def init(board, project_dir, **kwargs):
         json.dump({}, f)
 
 @firmware.command()
-@click.option(
-    "-b", "--board", default="megaatmega2560",
-    help="The board to use for compilaton. Defaults to megaatmega2560 "
-    "(Arduino Mega 2560)"
-)
-@click.option(
-    "-c", "--categories", multiple=True, default=["sensors", "actuators"],
-    type=click.Choice(["sensors", "actuators", "calibration"]),
-    help="A list of the categories of inputs and outputs that should be "
-    "enabled"
-)
-@click.option(
-    "-d", "--project-dir", default=".",
-    help="The directory in which the project should reside"
-)
-@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
-@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
-@click.option(
-    "--status_update_interval", default=5,
-    help="Minimum interval between driver status updates (in seconds)"
-)
+@project_dir_option
+@codegen_options
 def run(
-    board, categories, project_dir, plugin, target, status_update_interval
+    categories, project_dir, plugin, target, status_update_interval
 ):
     """ Generate code for this project and run it """
     project_dir = os.path.abspath(project_dir)
 
-    # Get the list of modules
-    modules_path = os.path.join(project_dir, "modules.json")
-    with open(modules_path) as f:
-        modules = json.load(f)
-
     # Get the list of module types
     module_types = {}
+    # Read from the local couchdb server
+    local_server = config["local_server"]["url"]
+    if local_server:
+        server = Server(local_server)
+        db = server[FIRMWARE_MODULE_TYPE]
+        for _id in db:
+            if _id.startswith("_"):
+                continue
+            module_types[_id] = FirmwareModuleType(db[_id])
+    # Check for working modules in the lib folder
+    # Do this second so project-local values overwrite values from the server
     lib_path = os.path.join(project_dir, "lib")
     for dir_name in os.listdir(lib_path):
         dir_path = os.path.join(lib_path, dir_name)
@@ -97,30 +115,118 @@ def run(
                     break
             else:
                 del mod_info["outputs"][output_name]
-        for input_name, input_info in mod_info["inputs"]:
+        for input_name, input_info in mod_info["inputs"].items():
             for c in input_info["categories"]:
                 if c in categories:
                     break
             else:
                 del mod_info["inputs"][input_name]
 
+    # Get the list of modules
+    modules_path = os.path.join(project_dir, "modules.json")
+    with open(modules_path) as f:
+        modules = json.load(f)
+
+    # Populate the modules with data from their types
+    for mod_id, mod_info in modules.items():
+        mod_type = module_types[mod_info["type"]]
+        if "pio_id" in mod_type:
+            mod_info["pio_id"] = mod_type["pio_id"]
+        mod_info["header_file"] = mod_type["header_file"]
+        mod_info["class_name"] = mod_type["class_name"]
+        # Update the arguments
+        raw_args = mod_info["arguments"]
+        real_args = []
+        i = 0
+        for arg_info in mod_type["arguments"]:
+            if i >= len(raw_args):
+                if "default" in arg_info:
+                    real_args.append(arg_info["default"])
+                else:
+                    raise click.ClickException(
+                        'Not enough module arguments supplied for module "{}" '
+                        "(expecting {})".format(
+                            mod_id, len(mod_type["arguments"])
+                        )
+                    )
+            else:
+                val = raw_args[i]
+                if arg_info["type"] == "int":
+                    val = int(val)
+                elif arg_info["type"] == "float":
+                    val = float(val)
+                elif arg_info["type"] == "bool":
+                    if val.lower() == "true":
+                        val = True
+                    elif val.lower() == "false":
+                        val = False
+                    else:
+                        raise click.BadParameter(
+                            "Argument number {} should be a boolean value "
+                            '("true" or "false")'.format(i)
+                        )
+                real_args.append(val)
+            i += 1
+        mod_info["arguments"] = real_args
+        # Apply mappings to inputs and outputs
+        mappings = mod_info.get("mappings", {})
+        mod_inputs = {}
+        for input_name, input_info in mod_type["inputs"].items():
+            if input_name in mappings:
+                mapped_name = mappings[input_name]
+            else:
+                mapped_name = input_name
+            real_input_info = dict(input_info)
+            real_input_info["mapped_name"] = mapped_name
+            mod_inputs[input_name] = real_input_info
+        mod_info["inputs"] = mod_inputs
+        mod_outputs = {}
+        for output_name, output_info in mod_type["outputs"].items():
+            if output_name in mappings:
+                mapped_name = mappings[output_name]
+            else:
+                mapped_name = output_name
+            real_output_info = dict(output_info)
+            real_output_info["mapped_name"] = mapped_name
+            mod_outputs[output_name] = real_output_info
+        mod_info["outputs"] = mod_outputs
+
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
-    try:
-        plugins = [
-            plugin_map[plugin_name](modules, module_types) for plugin_name in
-            plugin
-        ]
-    except KeyError as e:
-        raise click.ClickException(
-            'Plugin "{}" does not exist'.format(e.args[0])
-        )
+    # Create the plugins
+    plugins = []
+    for plugin_name in plugin:
+        plugin_cls = plugin_map.get(plugin_name, None)
+        if not plugin_cls:
+            try:
+                plugin_module_name, plugin_cls_name = plugin_name.split(":")
+                plugin_module = import_module(plugin_module_name)
+                plugin_cls = getattr(plugin_module, plugin_cls_name)
+            except ValueError:
+                raise click.ClickException(
+                    '"{}" is not a valid plugin path'.format(plugin_name)
+                )
+            except ImportError:
+                raise click.ClickException(
+                    '"{}" does not name a Python module'.format(
+                        plugin_module_name
+                    )
+                )
+            except AttributeError:
+                raise click.ClickException(
+                    'Module "{}" does not contain the class "{}"'.format(
+                        plugin_module_name, plugin_cls_name
+                    )
+                )
+        plugins.append(plugin_cls(modules))
+
+    # Generate the code
     codegen = CodeGen(
-        modules=modules, module_types=module_types, plugins=plugins,
+        modules=modules, plugins=plugins,
         status_update_interval=status_update_interval
     )
-    for dep in codegen.dependencies():
+    for dep in codegen.all_dependencies():
         subprocess.call(["platformio", "lib", "install", str(dep)])
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
@@ -134,71 +240,29 @@ def run(
 
 @firmware.command()
 @click.argument("arguments", nargs=-1)
-@click.option(
-    "-b", "--board", default="megaatmega2560",
-    help="The board to use for compilaton. Defaults to megaatmega2560 "
-    "(Arduino Mega 2560)"
-)
-@click.option(
-    "-c", "--categories", multiple=True, default=["sensors", "actuators"],
-    type=click.Choice(["sensors", "actuators", "calibration"]),
-    help="A list of the categories of inputs and outputs that should be "
-    "enabled"
-)
-@click.option("-p", "--plugin", multiple=True, help="Enable a specific plugin")
-@click.option("-t", "--target", help="PlatformIO target (e.g. upload)")
-@click.option(
-    "--status_update_interval", default=5,
-    help="Minimum interval between driver status updates (in seconds)"
-)
+@board_option
+@project_dir_option
+@codegen_options
 @click.pass_context
 def run_module(
-    ctx, board, categories, plugin, target, status_update_interval,
-    arguments
+    ctx, arguments, project_dir, board, **kwargs
 ):
     """ Run a single instance of this module """
+
     # Read the module config
-    with open("module.json") as f:
+    here = os.path.abspath(project_dir)
+    module_json_path = os.path.join(here, "module.json")
+    with open(module_json_path) as f:
         module_type = FirmwareModuleType(json.load(f))
 
-    # Parse the module arguments
-    real_args = []
-    i = 0
-    for arg_info in module_type["arguments"]:
-        if i >= len(arguments):
-            if "default" in arg_info:
-                real_args.append(arg_info["default"])
-            else:
-                raise click.ClickException(
-                    "Not enough module arguments supplied (expecting {})".format(
-                        len(module_type["arguments"])
-                    )
-                )
-        else:
-            val = arguments[i]
-            if arg_info["type"] == "int":
-                val = int(val)
-            if arg_info["type"] == "bool":
-                if val.lower() == "true":
-                    val = True
-                elif val.lower() == "false":
-                    val = False
-                else:
-                    raise click.BadParameter(
-                        "Argument number {} should be a boolean value "
-                        '("true" or "false")'.format(i+1)
-                    )
-            real_args.append(val)
-        i += 1
-
     # Create the build directory
-    here = os.getcwd()
     build_path = os.path.join(here, "_build")
     if not os.path.isdir(build_path):
         os.mkdir(build_path)
+    kwargs["project_dir"] = build_path
 
     # Initialize an openag project in the build directory
-    ctx.invoke(init, board=board, project_dir=build_path)
+    ctx.invoke(init, board=board, **kwargs)
 
     # Link the source files into the lib directory
     lib_path = os.path.join(build_path, "lib")
@@ -219,7 +283,7 @@ def run_module(
     modules = {
         "module": FirmwareModule({
             "type": "module",
-            "arguments": real_args
+            "arguments": list(arguments)
         })
     }
     modules_file = os.path.join(build_path, "modules.json")
@@ -227,7 +291,4 @@ def run_module(
         json.dump(modules, f)
 
     # Run the project
-    ctx.invoke(
-        run, board=board, categories=categories, plugin=plugin, target=target,
-        project_dir=build_path, status_update_interval=status_update_interval
-    )
+    ctx.invoke(run, **kwargs)
