@@ -93,7 +93,7 @@ def init(farm_name):
             "deinitialize it".format(old_farm_name)
         )
     if config["local_server"]["url"]:
-        replicate_per_farm_dbs(config, farm_name=farm_name)
+        replicate_per_farm_dbs(farm_name=farm_name)
     config["cloud_server"]["farm_name"] = farm_name
 
 @farm.command()
@@ -107,5 +107,5 @@ def deinit():
     check_for_cloud_farm()
     farm_name = config["cloud_server"]["farm_name"]
     if farm_name and config["local_server"]["url"]:
-        replicate_per_farm_dbs(config, farm_name=farm_name)
+        cancel_per_farm_db_replication()
     config["cloud_server"]["farm_name"] = None

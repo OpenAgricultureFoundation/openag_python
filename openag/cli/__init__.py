@@ -3,15 +3,14 @@ import click
 @click.group()
 def main():
     """ Command Line Interface for OpenAg software """
-    pass
 
-from db import db
-from farm import farm
-from user import user
-from cloud import cloud
-from firmware import firmware
-main.add_command(db)
-main.add_command(farm)
-main.add_command(user)
-main.add_command(cloud)
-main.add_command(firmware)
+from db import db as db_commands
+from farm import farm as farm_commands
+from user import user as user_commands
+from cloud import cloud as cloud_commands
+from firmware import firmware as firmware_commands
+main.add_command(db_commands)
+main.add_command(farm_commands)
+main.add_command(user_commands)
+main.add_command(cloud_commands)
+main.add_command(firmware_commands)

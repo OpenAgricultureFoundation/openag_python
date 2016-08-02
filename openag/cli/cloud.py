@@ -1,7 +1,7 @@
 import click
 from urlparse import urlparse
 
-from farm import deinit as deinit_farm
+from user import logout as logout_user
 from utils import *
 from config import config
 
@@ -13,7 +13,6 @@ def cloud():
     Provides commands for selecting a cloud server with which to exchange grow
     data.
     """
-    pass
 
 @cloud.command()
 @click.argument("cloud_url")
@@ -57,9 +56,7 @@ def deinit(ctx):
     """
     check_for_cloud_server()
     if config["local_server"]["url"]:
-        replicate_global_dbs(
-            cloud_url=config["cloud_server"]["url"], cancel=True
-        )
-        if config["cloud_server"]["farm_name"]:
-            ctx.invoke(deinit_farm)
-    del config["cloud_server"]["url"]
+        cancel_global_db_replication()
+    if config["cloud_server"]["username"]:
+        ctx.invoke(logout_user)
+    config["cloud_server"]["url"] = None

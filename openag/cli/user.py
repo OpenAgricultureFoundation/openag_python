@@ -1,8 +1,9 @@
 import click
 
 from openag.couchdb import Server
-from config import config
+from farm import deinit as deinit_farm
 from utils import check_for_cloud_server, check_for_cloud_user
+from config import config
 
 @click.group()
 def user():
@@ -55,9 +56,12 @@ def login(username, password):
     config["cloud_server"]["password"] = password
 
 @user.command()
-def logout():
+@click.pass_context
+def logout(ctx):
     """ Log out of your user account """
     check_for_cloud_server()
     check_for_cloud_user()
-    del config["cloud_server"]["username"]
-    del config["cloud_server"]["password"]
+    if config["cloud_server"]["farm_name"]:
+        ctx.invoke(deinit_farm)
+    config["cloud_server"]["username"] = None
+    config["cloud_server"]["password"] = None

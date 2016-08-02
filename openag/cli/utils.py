@@ -48,7 +48,7 @@ def check_for_cloud_farm():
             "to, and `openag cloud farm select` to select a farm"
         )
 
-def replicate_global_dbs(cloud_url=None, local_url=None, cancel=False):
+def replicate_global_dbs(cloud_url=None, local_url=None):
     """
     Set up replication of the global databases from the cloud server to the
     local server.
@@ -59,8 +59,6 @@ def replicate_global_dbs(cloud_url=None, local_url=None, cancel=False):
     :param str local_url: Used to override the local url from the global
     configuration in case the calling function is in the process of
     initializing the local server
-    :param bool cancel: If this flag is set to true, this function will cancel
-    an existing replication instead of starting a new one
     """
     local_url = local_url or config["local_server"]["url"]
     cloud_url = cloud_url or config["cloud_server"]["url"]
@@ -68,12 +66,20 @@ def replicate_global_dbs(cloud_url=None, local_url=None, cancel=False):
     for db_name in global_dbs:
         server.replicate(
             urljoin(cloud_url, db_name), db_name, continuous=True,
-            cancel=cancel
         )
 
-def replicate_per_farm_dbs(
-    cloud_url=None, local_url=None, farm_name=None, cancel=False
-):
+def cancel_global_db_replication():
+    """
+    Cancel replication of the global databases from the cloud server to the
+    local server.
+    """
+    local_url = config["local_server"]["url"]
+    cloud_url = config["cloud_server"]["url"]
+    server = Server(local_url)
+    for db_name in global_dbs:
+        server.cancel_replication(urljoin(cloud_url, db_name))
+
+def replicate_per_farm_dbs(cloud_url=None, local_url=None, farm_name=None):
     """
     Sete up replication of the per-farm databases from the local server to the
     cloud server.
@@ -87,8 +93,6 @@ def replicate_per_farm_dbs(
     :param str farm_name: Used to override the farm name from the global
     configuratino in case the calling function is in the process of
     initializing the farm
-    :param bool cancel: If this flag is set to true, this function will cancel
-    an existing replication instead of starting a new one
     """
     cloud_url = cloud_url or config["cloud_server"]["url"]
     local_url = local_url or config["local_server"]["url"]
@@ -113,5 +117,16 @@ def replicate_per_farm_dbs(
         remote_db_name = "{}/{}/{}".format(username, farm_name, db_name)
         server.replicate(
             db_name, urljoin(cloud_url, quote(remote_db_name, "")),
-            continuous=True, cancel=cancel
+            continuous=True
         )
+
+def cancel_per_farm_db_replication():
+    """
+    Cancel replication of the per-farm databases from the local server to the
+    cloud server.
+    """
+    cloud_url = config["cloud_server"]["url"]
+    local_url = config["local_server"]["url"]
+    server = Server(local_url)
+    for db_name in per_farm_dbs:
+        server.cancel_replication(db_name)

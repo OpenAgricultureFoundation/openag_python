@@ -53,30 +53,44 @@ class PersistentObj(object):
     def __nonzero__(self):
         return bool(self._data)
 
+    def __iter__(self):
+        self._clean()
+        for key in self._data:
+            yield key
+
+    def items(self):
+        for k in self:
+            yield k, self[k]
+
+    def _clean(self):
+        for k,v in self._data.items():
+            if not v:
+                del self._data[k]
+
     def _save(self):
+        self._clean()
         self._parent._save()
 
 class Config(PersistentObj):
-    def __init__(self):
+    def __init__(self, filename=CONFIG_FILE):
+        self.filename = filename
+        folder = os.path.dirname(filename)
         try:
-            os.makedirs(CONFIG_FOLDER)
+            os.makedirs(folder)
         except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(CONFIG_FOLDER):
+            if e.errno == errno.EEXIST and os.path.isdir(folder):
                 pass
             else:
                 raise
         try:
-            with open(CONFIG_FILE) as f:
+            with open(filename) as f:
                 self._data = json.load(f)
-        except IOError:
+        except (IOError, ValueError):
             self._data = {}
 
-    def __iter__(self):
-        for key in self._data:
-            yield key
-
     def _save(self):
-        with open(CONFIG_FILE, "w+") as f:
+        self._clean()
+        with open(self.filename, "w+") as f:
             json.dump(self._data, f)
 
 config = Config()

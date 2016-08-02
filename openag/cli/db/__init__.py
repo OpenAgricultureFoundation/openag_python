@@ -13,7 +13,6 @@ from .db_config import generate_config
 @click.group()
 def db():
     """ Manage the local CouchDB instance """
-    pass
 
 @db.command()
 @click.option("--db_url", default="http://localhost:5984")
@@ -25,15 +24,15 @@ def init(db_url, api_url):
     documents into those databases, and sets up replication with the cloud
     server if one has already been selected.
     """
-    db_config = generate_config(api_url)
-    server = Server(db_url)
-
     old_db_url = config["local_server"]["url"]
     if old_db_url and old_db_url != db_url:
         raise click.ClickException(
             "Local database \"{}\" already initialized. Switching local "
             "databases is not currently supported".format(old_db_url)
         )
+
+    db_config = generate_config(api_url)
+    server = Server(db_url)
 
     # Configure the CouchDB instance itself
     for section, values in db_config.items():
@@ -63,9 +62,9 @@ def init(db_url, api_url):
 
     # Set up replication
     if config["cloud_server"]["url"]:
-        replicate_global_dbs(config, local_url=db_url)
+        replicate_global_dbs(local_url=db_url)
         if config["cloud_server"]["farm_name"]:
-            replicate_per_farm_dbs(config, local_url=db_url)
+            replicate_per_farm_dbs(local_url=db_url)
 
     config["local_server"]["url"] = db_url
 

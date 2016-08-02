@@ -21,11 +21,9 @@ class Database(object):
         self.docs = None
 
     def __contains__(self, doc_id):
-        res = self.server.head(self.db_name+"/"+quote(doc_id, ""))
-        if res.status_code == 200:
-            return True
-        else:
-            return False
+        if not self.docs:
+            self._fetch()
+        return doc_id in self.docs
 
     def __iter__(self):
         if not self.docs:
@@ -36,6 +34,14 @@ class Database(object):
         if not self.docs:
             self._fetch()
         return self.docs[key]
+
+    def __setitem__(self, key, val):
+        # Make sure the id is set on the val
+        val["_id"] = key
+        self.store(val)
+
+    def __delitem__(self, key):
+        self.delete(key)
 
     def _fetch(self):
         self.docs = {}
@@ -49,46 +55,33 @@ class Database(object):
 
     def store(self, doc):
         doc_id = doc.get("_id", None)
+
         if doc_id:
-            created = False
-            should_save = False
-            res = self.server.get(self.db_name+"/"+doc_id)
-            if res.status_code == 200:
-                # This is an update
-                doc_to_store = res.json()
-                for k,v in doc.items():
-                    if doc_to_store.get(k, None) != v:
-                        should_save = True
-                        doc_to_store[k] = v
-                for k,_ in doc_to_store.items():
+            is_update = (doc_id in self)
+            if is_update:
+                old_doc = self[doc_id]
+                # Copy internal keys from the old document
+                for k,v in old_doc.items():
                     if k.startswith("_"):
-                        continue
-                    if not k in doc:
-                        should_save = True
-                        del doc_to_store[k]
+                        doc[k] = v
+                # If the document hasn't changed, do nothing
+                if val == old_doc:
+                    return
+            res = self.server.put(
+                "/".join([self.db_name, doc_id]), data=json.dumps(doc)
+            )
+            if (is_update and res.status_code == 200) or \
+                    (not is_update and res.status_code == 201):
+                doc.update(res.json())
             else:
-                # This is a new document
-                created = True
-                should_save = True
-                doc_to_store = doc
-            if should_save:
-                res = self.server.put(
-                    self.db_name+"/"+doc_id,
-                    data=json.dumps(doc_to_store)
-                )
-                if (created and res.status_code == 201) or \
-                        (not created and res.status_code == 200):
-                    return res.json()
-                else:
-                    raise RuntimeError(
-                        "Failed to save document ({}): {}".format(
-                            res.status_code, res.content
-                        )
+                raise RuntimeError(
+                    "Failed to save document ({}): {}".format(
+                        res.status_code, res.content
                     )
+                )
         else:
             res = self.server.post(
-                self.db_name,
-                data=json.dumps(doc_to_store)
+                self.db_name, data=json.dumps(doc)
             )
             if not res.status_code == 201:
                 raise RuntimeError(
@@ -96,7 +89,20 @@ class Database(object):
                         res.status_code, res.content
                     )
                 )
-            return res.json()
+            doc.update(res.json())
+            doc_id = doc["_id"]
+
+        self.docs[doc_id] = doc
+
+    def delete(self, doc_id):
+        res = self.server.delete("/".join([self.db_name, doc_id]))
+        if res.status_code != 200:
+            raise RuntimeError(
+                "Failed to delete document ({}): {}".format(
+                    res.status_code, res.content
+                )
+            )
+        del self.docs[doc_id]
 
 class Server(requests.Session):
     """
@@ -126,27 +132,21 @@ class Server(requests.Session):
         url = urljoin(self.url, url)
         return super(Server, self).request(method, url, **kwargs)
 
-    def replicate(self, source, target, cancel=False, **kwargs):
-        if cancel:
-            raise NotImplementedError()
+    def replicate(self, source, target, continuous=False):
+        if source in self["_replicator"]:
+            return
         data = {
             "_id": source,
             "source": source,
             "target": target,
+            "continuous": continuous
         }
-        if data["_id"] in self["_replicator"]:
+        self["_replicator"][source] = data
+
+    def cancel_replication(self, source):
+        if source not in self["_replicator"]:
             return
-        data.update(kwargs)
-        res = self.post(
-            "_replicator", data=json.dumps(data),
-            headers={"Content-Type": "application/json"}
-        )
-        if not res.status_code == 201:
-            raise RuntimeError(
-                "Failed to set up replication with cloud server ({}): {}".format(
-                    res.status_code, res.content
-                )
-            )
+        del self["_replicator"][source]
 
     def create_user(self, username, password):
         """

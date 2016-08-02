@@ -12,133 +12,159 @@ from openag.couchdb import Server
 from openag.db_names import per_farm_dbs
 from openag.cli.farm import show, create, list, init, deinit
 
-def test_farm_without_cloud_server():
+@mock_config({
+    "cloud_server": {
+        "url": None
+    }
+})
+def test_farm_without_cloud_server(config):
     runner = CliRunner()
-    mock_config({
-        "cloud_server": {
-            "url": None
-        }
-    })
 
     # Show -- Should raise an error because there is no cloud server
-    assert runner.invoke(show).exit_code
+    res = runner.invoke(show)
+    assert res.exit_code, res.output
 
     # Create -- Should raise an error because there is no cloud server
-    assert runner.invoke(create).exit_code
+    res = runner.invoke(create)
+    assert res.exit_code, res.output
 
     # List -- Should raise an error because there is no cloud server
-    assert runner.invoke(list).exit_code
+    res = runner.invoke(list)
+    assert res.exit_code, res.output
 
     # Init -- Should raise an error because there is no cloud server
-    assert runner.invoke(init).exit_code
+    res = runner.invoke(init)
+    assert res.exit_code, res.output
 
     # Deinit -- Should raise an error because there is no cloud server
-    assert runner.invoke(deinit).exit_code
+    res = runner.invoke(deinit)
+    assert res.exit_code, res.output
 
-def test_farm_without_user():
+@mock_config({
+    "cloud_server": {
+        "url": "http://test.test:5984",
+        "username": None,
+        "password": None,
+        "farm_name": None
+    }
+})
+def test_farm_without_user(config):
     runner = CliRunner()
-    mock_config({
-        "cloud_server": {
-            "url": "http://test.test:5984",
-            "username": None,
-            "password": None,
-            "farm_name": None
-        }
-    })
 
     # Show -- Should raise an error because no farm is selected
-    assert runner.invoke(show).exit_code
+    res = runner.invoke(show)
+    assert res.exit_code, res.output
 
     # Create -- Should raise an error because the user is not logged in
-    assert runner.invoke(create).exit_code
+    res = runner.invoke(create)
+    assert res.exit_code, res.output
 
     # List -- Should raise an error because the user is not logged in
-    assert runner.invoke(list).exit_code
+    res = runner.invoke(list)
+    assert res.exit_code, res.output
 
     # Init -- Should raise an error becuase the user is not logged in
-    assert runner.invoke(init).exit_code
+    res = runner.invoke(init)
+    assert res.exit_code, res.output
 
     # Deinit -- Should raise an error because no farm is selected
-    assert runner.invoke(deinit).exit_code
+    res = runner.invoke(deinit)
+    assert res.exit_code, res.output
 
+@mock_config({
+    "cloud_server": {
+        "url": "http://test.test:5984",
+        "username": "test",
+        "password": "test",
+        "farm_name": None
+    },
+    "local_server": {
+        "url": None
+    }
+})
 @requests_mock.Mocker()
-def test_farm_with_only_cloud_server(m):
+def test_farm_with_only_cloud_server(config, m):
     runner = CliRunner()
-    mock_config({
-        "cloud_server": {
-            "url": "http://test.test:5984",
-            "username": "test",
-            "password": "test",
-            "farm_name": None
-        },
-        "local_server": {
-            "url": None
-        }
-    })
 
     # Show -- Should raise an error because no farm is selected
-    assert runner.invoke(show).exit_code
+    res = runner.invoke(show)
+    assert res.exit_code, res.output
 
     # List -- Should raise an error because there are no farms yet
     m.get("http://test.test:5984/_all_dbs", text="[]")
     m.get("http://test.test:5984/_session", text="{}")
     m.get("http://test.test:5984/_users/org.couchdb.user%3Atest", text="{}")
-    assert runner.invoke(list).exit_code
+    res = runner.invoke(list)
+    assert res.exit_code, res.output
 
     # Create -- Should work
     m.post("http://test.test:5984/_openag/v0.1/register_farm", text="{}")
-    assert runner.invoke(create, ["test"]).exit_code == 0
+    res = runner.invoke(create, ["test"])
+    assert res.exit_code == 0, res.exception or res.output
 
     # List -- Should output "test"
     m.get(
         "http://test.test:5984/_users/org.couchdb.user%3Atest",
         text='{"farms": ["test"]}'
     )
-    assert runner.invoke(list).output == "test\n"
+    res = runner.invoke(list)
+    assert res.output == "test\n", res.output
 
     # Show -- Should raise an error because no farm is selected
-    assert runner.invoke(show).exit_code
+    res = runner.invoke(show)
+    assert res.exit_code, res.output
 
     # Init -- Should work
-    assert runner.invoke(init, ["test"]).exit_code == 0
+    res = runner.invoke(init, ["test"])
+    assert res.exit_code == 0, res.exception or res.output
 
     # Show -- Should work and output "test"
-    assert runner.invoke(show).exit_code == 0
+    res = runner.invoke(show)
+    assert res.exit_code == 0, res.exception or res.output
 
     # List -- Should have an asterisk before "test"
-    assert runner.invoke(list).output == "*test\n"
+    res = runner.invoke(list)
+    assert res.output == "*test\n", res.exception or res.output
 
     # Deinit -- Should work
-    assert runner.invoke(deinit).exit_code == 0
+    res = runner.invoke(deinit)
+    assert res.exit_code == 0, res.exception or res.output
 
     # Show -- Should raise an error because no farm is selected
-    assert runner.invoke(show).exit_code
+    res = runner.invoke(show)
+    assert res.exit_code, res.output
 
     # List -- Should work and output "test"
-    assert runner.invoke(list).output == "test\n"
+    res = runner.invoke(list)
+    assert res.output == "test\n", res.exception or res.output
 
+@mock_config({
+    "cloud_server": {
+        "url": "http://test.test:5984",
+        "username": "test",
+        "password": "test",
+        "farm_name": None
+    },
+    "local_server": {
+        "url": "http://localhost:5984"
+    }
+})
 @mock.patch.object(Server, "replicate")
+@mock.patch.object(Server, "cancel_replication")
 @requests_mock.Mocker()
-def test_farm_with_cloud_and_local_server(replicate, m):
+def test_farm_with_cloud_and_local_server(
+    config, cancel_replication, replicate, m
+):
     runner = CliRunner()
-    mock_config({
-        "cloud_server": {
-            "url": "http://test.test:5984",
-            "username": "test",
-            "password": "test",
-            "farm_name": None
-        },
-        "local_server": {
-            "url": "http://localhost:5984"
-        }
-    })
 
     # Init -- Should replicate per farm DBs
     m.get("http://localhost:5984/_all_dbs", text="[]")
-    assert runner.invoke(init, ["test"]).exit_code == 0
+    res = runner.invoke(init, ["test"])
+    assert res.exit_code == 0, res.exception or res.output
     assert replicate.call_count == len(per_farm_dbs)
     replicate.reset_mock()
 
     # Deinit -- Should cancel replication of per farm DBs
-    assert runner.invoke(deinit).exit_code == 0
-    assert replicate.call_count == len(per_farm_dbs)
+    res = runner.invoke(deinit)
+    assert res.exit_code == 0, res.exception or res.output
+    assert cancel_replication.call_count == len(per_farm_dbs)
