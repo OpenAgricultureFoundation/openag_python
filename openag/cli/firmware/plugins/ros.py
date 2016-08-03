@@ -93,13 +93,11 @@ class ROSCommPlugin(Plugin):
         return "_".join([mod_name, input_name, "callback"])
 
     def output_topic(self, mod_name, output_name):
-        mapped_output_name = self.modules[mod_name]["outputs"][output_name]["mapped_name"]
-        return "/sensors/{mod_name}_{output_name}".format(
-            mod_name=mod_name, output_name=mapped_output_name
+        return "/sensors/{mod_name}/{output_name}/raw".format(
+            mod_name=mod_name, output_name=output_name
         )
 
     def input_topic(self, mod_name, input_name):
-        mapped_input_name = self.modules[mod_name]["inputs"][input_name]["mapped_name"]
-        return "/actuators/{mod_name}_{input_name}".format(
-            mod_name=mod_name, input_name=mapped_input_name
+        return "/actuators/{mod_name}/{input_name}".format(
+            mod_name=mod_name, input_name=input_name
         )
