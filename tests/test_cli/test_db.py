@@ -98,8 +98,11 @@ def test_init_with_cloud_server(
 def test_load_fixture_without_local_server(config):
     runner = CliRunner()
 
-    # Load_fixtue -- Should throw an error because there is no local server
-    res = runner.invoke(load_fixture, ["test"])
+    # Load_fixture -- Should throw an error because there is no local server
+    with runner.isolated_filesystem():
+        with open("fixture.json", "w+") as f:
+            f.write("{}")
+        res = runner.invoke(load_fixture, ["fixture.json"])
     assert res.exit_code, res.output
 
 @mock_config({

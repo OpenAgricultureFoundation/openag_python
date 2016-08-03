@@ -65,7 +65,7 @@ class Database(object):
                     if k.startswith("_"):
                         doc[k] = v
                 # If the document hasn't changed, do nothing
-                if val == old_doc:
+                if doc == old_doc:
                     return
             res = self.server.put(
                 "/".join([self.db_name, doc_id]), data=json.dumps(doc)
@@ -112,7 +112,7 @@ class Server(requests.Session):
     def __init__(self, url="http://localhost:5984"):
         self.url = url
         super(Server, self).__init__()
-        self.db_names = self.get("_all_dbs").json()
+        self.db_names = set(self.get("_all_dbs").json())
         self.dbs = {}
 
     def __len__(self):
@@ -184,14 +184,13 @@ class Server(requests.Session):
         return self.get("_users/"+user_id).json()
 
     def get_or_create_db(self, db_name):
-        res = self.get(db_name)
-        if not res.status_code == 200:
+        if not db_name in self:
             res = self.put(db_name)
             if not res.status_code == 201:
                 raise RuntimeError(
                     'Failed to create database "{}"'.format(db_name)
                 )
-            self.db_names.append(db_name)
+            self.db_names.add(db_name)
         return self[db_name]
 
     def push_design_documents(self, design_path):

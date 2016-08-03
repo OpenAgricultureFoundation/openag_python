@@ -8,7 +8,6 @@ from config import config
 @click.group()
 def user():
     """ Manage your cloud user account """
-    pass
 
 @user.command()
 def show():

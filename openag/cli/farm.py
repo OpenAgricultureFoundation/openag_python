@@ -7,7 +7,6 @@ from config import config
 @click.group()
 def farm():
     """ Manage the cloud mirror of your data """
-    pass
 
 @farm.command()
 def show():
