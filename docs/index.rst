@@ -16,6 +16,7 @@ setting up and interacting with a system.
    :maxdepth: 2
 
    object_model
+   variable_types
    cli
    database_queries
    recipes

@@ -1,15 +1,35 @@
-__all__ = ["env_vars"]
+__all__ = ["EnvVars"]
 
-env_vars = set()
+class EnvVar:
+    items = set()
 
-def env_var(var_name):
-    env_vars.add(var_name)
-    return var_name
+    def __init__(self, name, description, units=None):
+        self.name = name
+        self.__doc__ = description
+        self.units = units
+        self.items.add(self)
 
-AIR_TEMPERATURE = env_var("air_temperature")
-AIR_HUMIDITY = env_var("air_humidity")
-WATER_TEMPERATURE = env_var("water_temperature")
-WATER_POTENTIAL_HYDROGEN = env_var("water_potential_hydrogen")
-WATER_ELECTRICAL_CONDUCTIVITY = env_var("water_electrical_conductivity")
-RECIPE_START = env_var("recipe_start")
-RECIPE_END = env_var("recipe_end")
+    def __str__(self):
+        return self.name
+
+AIR_TEMPERATURE = EnvVar(
+    "air_temperature", "Temperature of the air in degrees Celcius", "degrees C"
+)
+AIR_HUMIDITY = EnvVar(
+    "air_humidity",
+    "A measure of the concentration of water in the air relative to the "
+    "maximum concentration at the current temperature", "percent relative"
+)
+WATER_TEMPERATURE = EnvVar(
+    "water_temperature", "Temperature of the air in degrees Celcius",
+    "degrees C"
+)
+WATER_POTENTIAL_HYDROGEN = EnvVar(
+    "water_potential_hydrogen", "Potential Hydrogen of the water", "pH"
+)
+WATER_ELECTRICAL_CONDUCTIVITY = EnvVar(
+    "water_electrical_conductivity",
+    "Electrical conductivity of the water in uS/cm", "uS/cm"
+)
+RECIPE_START = EnvVar("recipe_start", "Represents the start of a recipe")
+RECIPE_END = EnvVar("recipe_end", "Represents the end of a recipe")
