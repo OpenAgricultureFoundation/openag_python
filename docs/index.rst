@@ -17,6 +17,7 @@ setting up and interacting with a system.
 
    object_model
    cli
+   database_queries
    recipes
    firmware_modules
 
