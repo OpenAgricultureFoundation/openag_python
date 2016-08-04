@@ -1,5 +1,11 @@
 function (head, req) {
-  var headers = ["value", "timestamp"];
+  var headers;
+  if (req.query.hasOwnProperty("cols")) {
+    headers = JSON.parse(req.query.cols);
+  }
+  else {
+    headers = ["timestamp", "variable", "value"];
+  }
   start({'headers': {'Content-Type': 'text/csv; charset=utf-8; header=present'}});
   send('"' + headers.join('","') + '"\n');
   while (r=getRow()) {

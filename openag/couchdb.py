@@ -57,8 +57,7 @@ class Database(object):
         doc_id = doc.get("_id", None)
 
         if doc_id:
-            is_update = (doc_id in self)
-            if is_update:
+            if doc_id in self:
                 old_doc = self[doc_id]
                 # Copy internal keys from the old document
                 for k,v in old_doc.items():
@@ -70,8 +69,7 @@ class Database(object):
             res = self.server.put(
                 "/".join([self.db_name, doc_id]), data=json.dumps(doc)
             )
-            if (is_update and res.status_code == 200) or \
-                    (not is_update and res.status_code == 201):
+            if res.status_code == 201:
                 doc.update(res.json())
             else:
                 raise RuntimeError(
