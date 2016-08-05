@@ -2,11 +2,12 @@ import os
 import json
 import time
 import click
+from couchdb.http import urljoin
 
 from openag import _design
-from openag.couchdb import Server
+from openag.couch import Server
 from openag.db_names import all_dbs
-from ..utils import *
+from .. import utils
 from ..config import config
 from .db_config import generate_config
 
@@ -37,24 +38,28 @@ def init(db_url, api_url):
     # Configure the CouchDB instance itself
     for section, values in db_config.items():
         for param, value in values.items():
-            url = "_config/{}/{}".format(section, param)
-            current_val = server.get(url).content.strip()
+            url = urljoin(server.resource.url, "_config", section, param)
+            current_val = server.resource.session.request(
+                "GET", url
+            )[2].read().strip()
             desired_val = '"{}"'.format(value.replace('"', '\\"'))
             if current_val != desired_val:
-                res = server.put(url, data=desired_val)
+                status = server.resource.session.request(
+                    "PUT", url, body=desired_val
+                )[0]
                 # Unless there is some delay  between requests, CouchDB gets
                 # sad for some reason
-                time.sleep(1)
-                if not res.status_code == 200:
+                if status != 200:
                     click.ClickException(
                         'Failed to set configuration parameter "{}": {}'.format(
                             param, res.content
                         )
                     )
+                time.sleep(1)
 
     # Create all dbs on the server
     for db_name in all_dbs:
-        server.get_or_create_db(db_name)
+        server.get_or_create(db_name)
 
     # Push design documents
     design_path = os.path.dirname(_design.__file__)
@@ -62,11 +67,22 @@ def init(db_url, api_url):
 
     # Set up replication
     if config["cloud_server"]["url"]:
-        replicate_global_dbs(local_url=db_url)
+        utils.replicate_global_dbs(local_url=db_url)
         if config["cloud_server"]["farm_name"]:
-            replicate_per_farm_dbs(local_url=db_url)
+            utils.replicate_per_farm_dbs(local_url=db_url)
 
     config["local_server"]["url"] = db_url
+
+@db.command()
+def show():
+    """
+    Shows the URL of the current local server or throws an error if no local
+    server is selected
+    """
+    utils.check_for_local_server()
+    click.echo("Using local server at \"{}\"".format(
+        config["local_server"]["url"]
+    ))
 
 @db.command()
 @click.argument("fixture_file", type=click.File())
@@ -77,11 +93,12 @@ def load_fixture(fixture_file):
     dictionary mapping database names to arrays of objects to store in those
     databases.
     """
-    check_for_local_server()
+    utils.check_for_local_server()
     local_url = config["local_server"]["url"]
     server = Server(local_url)
     fixture = json.load(fixture_file)
     for db_name, items in fixture.items():
         db = server[db_name]
         for item in items:
-            db.store(item)
+            item_id = item["_id"]
+            db[item_id] = item

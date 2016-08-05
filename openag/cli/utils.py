@@ -1,9 +1,10 @@
 from click import ClickException
 from urllib import quote
-from urlparse import urljoin, urlparse, ParseResult
+from urlparse import urlparse, ParseResult
+from couchdb.http import urljoin
 
 from .config import config
-from ..couchdb import Server
+from ..couch import Server
 from ..db_names import global_dbs, per_farm_dbs
 
 def check_for_local_server():
@@ -31,9 +32,9 @@ def check_for_cloud_user():
     """
     if not config["cloud_server"]["username"]:
         raise ClickException(
-            "Not logged into cloud server. Run `openag cloud user register` "
-            "to create a user account or `openag cloud user login` to log in "
-            "with an existing account"
+            "Not logged into cloud server. Run `openag user register` to "
+            "create a user account or `openag user login` to log in with an "
+            "existing account"
         )
 
 def check_for_cloud_farm():
@@ -116,7 +117,7 @@ def replicate_per_farm_dbs(cloud_url=None, local_url=None, farm_name=None):
     for db_name in per_farm_dbs:
         remote_db_name = "{}/{}/{}".format(username, farm_name, db_name)
         server.replicate(
-            db_name, urljoin(cloud_url, quote(remote_db_name, "")),
+            db_name, urljoin(cloud_url, remote_db_name),
             continuous=True
         )
 

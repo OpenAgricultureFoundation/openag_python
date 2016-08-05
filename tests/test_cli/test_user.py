@@ -3,12 +3,12 @@ Tests the ability to log in to a cloud server
 """
 import json
 import mock
+import httpretty
 from click.testing import CliRunner
-import requests_mock
 
 from tests import mock_config
 
-from openag.couchdb import Server
+from openag.couch import Server
 from openag.db_names import per_farm_dbs
 from openag.cli.user import show, register, login, logout
 
@@ -44,8 +44,8 @@ def test_user_without_cloud_server(config):
         "farm_name": None
     }
 })
-@requests_mock.Mocker()
-def test_user_with_cloud_server(config, m):
+@httpretty.activate
+def test_user_with_cloud_server(config):
     runner = CliRunner()
 
     # Show -- Should raise an error because the user is not logged in
@@ -53,10 +53,12 @@ def test_user_with_cloud_server(config, m):
     assert res.exit_code, res.output
 
     # Register -- Should work
-    m.get("http://test.test:5984/_all_dbs", text="[]")
-    m.put(
-        "http://test.test:5984/_users/org.couchdb.user%3Atest",
-        status_code=201, text="{}"
+    httpretty.register_uri(
+        httpretty.HEAD, "http://test.test:5984/_users"
+    )
+    httpretty.register_uri(
+        httpretty.PUT, "http://test.test:5984/_users/org.couchdb.user%3Atest",
+        status=201
     )
     res = runner.invoke(register, input="test\ntest\ntest\n")
     assert res.exit_code == 0, res.exception or res.output
@@ -66,9 +68,17 @@ def test_user_with_cloud_server(config, m):
     assert res.exit_code, res.exception or res.output
 
     # Login -- Should work
-    m.get("http://test.test:5984/_session", text="{}")
+    httpretty.register_uri(
+        httpretty.GET, "http://test.test:5984/_session"
+    )
     res = runner.invoke(login, input="test\ntest\n")
     assert res.exit_code == 0, res.exception or res.output
+
+    # Login -- Should throw an error because you're already logged in as a
+    # different user
+    res = runner.invoke(login, input="test2\ntest2\n")
+    assert res.exit_code, res.output
+    assert isinstance(res.exception, SystemExit)
 
     # Show -- Should work
     res = runner.invoke(show)
@@ -93,14 +103,12 @@ def test_user_with_cloud_server(config, m):
         "url": "http://localhost:5984"
     }
 })
-@mock.patch.object(Server, "cancel_replication")
-@requests_mock.Mocker()
-def test_logout_with_farm(config, cancel_replication, m):
+@mock.patch("openag.cli.utils.cancel_per_farm_db_replication")
+def test_logout_with_farm(config, cancel_per_farm_db_replication):
     runner = CliRunner()
-    m.get("http://localhost:5984/_all_dbs", text=json.dumps([]))
 
     # Logout -- Should get rid of the farm and cancel per-farm replication
     res = runner.invoke(logout)
     assert res.exit_code == 0, res.exception or res.output
-    assert cancel_replication.call_count == len(per_farm_dbs)
+    assert cancel_per_farm_db_replication.call_count == 1
     assert config["cloud_server"]["farm_name"] is None

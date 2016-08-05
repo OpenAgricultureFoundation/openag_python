@@ -59,6 +59,7 @@ class PersistentObj(object):
             yield key
 
     def items(self):
+        self._clean()
         for k in self:
             yield k, self[k]
 

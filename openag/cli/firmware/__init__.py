@@ -9,8 +9,8 @@ from voluptuous import Invalid
 from base import CodeGen
 from plugins import plugin_map
 from ..config import config
+from openag.couch import Server
 from openag.models import FirmwareModuleType, FirmwareModule
-from openag.couchdb import Server
 from openag.db_names import FIRMWARE_MODULE_TYPE
 
 def board_option(f):

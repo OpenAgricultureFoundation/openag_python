@@ -1,6 +1,6 @@
 import click
 
-from openag.couchdb import Server
+from openag.couch import Server
 from farm import deinit as deinit_farm
 from utils import check_for_cloud_server, check_for_cloud_user
 from config import config

@@ -1,8 +1,8 @@
 import click
 from urlparse import urlparse
 
+import utils
 from user import logout as logout_user
-from utils import *
 from config import config
 
 @click.group()
@@ -34,7 +34,7 @@ def init(cloud_url):
     if not parsed_url.scheme or not parsed_url.netloc or not parsed_url.port:
         raise click.BadParameter("Invalid url")
     if config["local_server"]["url"]:
-        replicate_global_dbs(cloud_url=cloud_url)
+        utils.replicate_global_dbs(cloud_url=cloud_url)
     config["cloud_server"]["url"] = cloud_url
 
 @cloud.command()
@@ -43,7 +43,7 @@ def show():
     Shows the URL of the current cloud server or throws an error if no cloud
     server is selected
     """
-    check_for_cloud_server()
+    utils.check_for_cloud_server()
     click.echo("Using cloud server at \"{}\"".format(
         config["cloud_server"]["url"]
     ))
@@ -54,9 +54,9 @@ def deinit(ctx):
     """
     Detach from the current cloud server
     """
-    check_for_cloud_server()
+    utils.check_for_cloud_server()
     if config["local_server"]["url"]:
-        cancel_global_db_replication()
+        utils.cancel_global_db_replication()
     if config["cloud_server"]["username"]:
         ctx.invoke(logout_user)
     config["cloud_server"]["url"] = None

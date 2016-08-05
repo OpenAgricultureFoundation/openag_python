@@ -55,4 +55,6 @@ instance.
 
 .. program-output:: openag db init --help
 
+.. program-output:: openag db show --help
+
 .. program-output:: openag db load_fixture --help
