@@ -77,9 +77,12 @@ class ROSCommPlugin(Plugin):
             mod_name=mod_name
         ))
         f.writeln('status_msg.name = "{mod_name}";'.format(mod_name=mod_name))
-        f.writeln('status_msg.message = {mod_name}.status_msg;'.format(
+        f.writeln('int buf_len = {mod_name}.status_msg.length();'.format(
             mod_name=mod_name
         ))
+        f.writeln('char buf[buf_len];')
+        f.writeln('module.status_msg.toCharArray(buf, buf_len);')
+        f.writeln('status_msg.message = buf;')
         f.writeln('status_msg.hardware_id = "none";');
         f.writeln("pub_diagnostics.publish(&status_msg);")
 

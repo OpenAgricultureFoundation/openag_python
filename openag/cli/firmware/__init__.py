@@ -11,7 +11,7 @@ from plugins import plugin_map
 from ..config import config
 from openag.couch import Server
 from openag.models import FirmwareModuleType, FirmwareModule
-from openag.db_names import FIRMWARE_MODULE_TYPE
+from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
 
 def board_option(f):
     f = click.option(
@@ -34,6 +34,11 @@ def codegen_options(f):
         type=click.Choice(["sensors", "actuators", "calibration"]),
         help="A list of the categories of inputs and outputs that should "
         "be enabled"
+    )(f)
+    f = click.option(
+        "-f", "--modules_file", type=click.File(),
+        help="JSON file describing the modules to include in the generated "
+        "code"
     )(f)
     f = click.option(
         "-p", "--plugin", multiple=True, help="Enable a specific plugin"
@@ -79,7 +84,8 @@ def init(board, project_dir, **kwargs):
 @project_dir_option
 @codegen_options
 def run(
-    categories, project_dir, plugin, target, status_update_interval
+    categories, modules_file, project_dir, plugin, target,
+    status_update_interval
 ):
     """ Generate code for this project and run it """
     project_dir = os.path.abspath(project_dir)
@@ -123,9 +129,21 @@ def run(
                 del mod_info["inputs"][input_name]
 
     # Get the list of modules
-    modules_path = os.path.join(project_dir, "modules.json")
-    with open(modules_path) as f:
-        modules = json.load(f)
+    modules = {}
+    # Read from the local couchdb server
+    if modules_file:
+        modules = json.load(modules_file)
+        modules = {
+            _id: FirmwareModule(info) for _id, info in modules.items()
+        }
+    elif local_server:
+        db = server[FIRMWARE_MODULE]
+        for _id in db:
+            if _id.startswith("_"):
+                continue
+            modules[_id] = FirmwareModule(db[_id])
+    else:
+        raise click.ClickException("No modules specified for the project")
 
     # Populate the modules with data from their types
     for mod_id, mod_info in modules.items():
@@ -289,6 +307,7 @@ def run_module(
     modules_file = os.path.join(build_path, "modules.json")
     with open(modules_file, "w") as f:
         json.dump(modules, f)
-
-    # Run the project
-    ctx.invoke(run, **kwargs)
+    with open(modules_file, "r") as f:
+        kwargs["modules_file"] = f
+        # Run the project
+        ctx.invoke(run, **kwargs)
