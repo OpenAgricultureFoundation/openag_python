@@ -10,6 +10,7 @@ setup(
         'requests>=2.10.0',
         'voluptuous>=0.8.11'
     ],
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'openag=openag.cli:main'
