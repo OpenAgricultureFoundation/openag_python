@@ -17,8 +17,12 @@ def test_basic_codegen():
         res = runner.invoke(init)
         assert res.exit_code == 0, res.exception or res.output
 
+        # Write an empty modules.json file
+        with open("modules.json", "w+") as f:
+            json.dump({ }, f)
+
         # Run -- Should work
-        res = runner.invoke(run)
+        res = runner.invoke(run, ["-f", "modules.json"])
         assert res.exit_code == 0, res.exception or res.output
 
 def test_basic_plugins():
@@ -29,16 +33,23 @@ def test_basic_plugins():
         res = runner.invoke(init)
         assert res.exit_code == 0, res.exception or res.output
 
+        # Write an empty modules.json file
+        with open("modules.json", "w+") as f:
+            json.dump({ }, f)
+
         # Run with ROS plugin -- Should work
-        res = runner.invoke(run, ["-p", "ros"])
+        res = runner.invoke(run, ["-p", "ros", "-f", "modules.json"])
+        print res.output
         assert res.exit_code == 0, res.exception or res.output
 
         # Run with CSV pliugin -- Should work
-        res = runner.invoke(run, ["-p", "csv"])
+        res = runner.invoke(run, ["-p", "csv", "-f", "modules.json"])
         assert res.exit_code == 0, res.exception or res.output
 
         # Run with both plugins -- Should work
-        res = runner.invoke(run, ["-p", "ros", "-p", "csv"])
+        res = runner.invoke(
+            run, ["-p", "ros", "-p", "csv", "-f", "modules.json"]
+        )
         assert res.exit_code == 0, res.exception or res.output
 
 def test_codegen_simple_module():

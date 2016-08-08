@@ -8,7 +8,8 @@ Cloud
 -----
 
 The subcommand :code:`openag cloud` provides tools for selecting a cloud server
-to use.
+to use, managing your user account on that server, and managing a farm instance
+on the server which serves as a mirror for your local instance.
 
 .. program-output:: openag cloud init --help
 
@@ -16,36 +17,21 @@ to use.
 
 .. program-output:: openag cloud deinit --help
 
-User
-----
+.. program-output:: openag cloud register --help
 
-The subcommand :code:`openag user` provides tools for managing your user
-account on the selected cloud server.
+.. program-output:: openag cloud login --help
 
-.. program-output:: openag user register --help
+.. program-output:: openag cloud show --help
 
-.. program-output:: openag user login --help
+.. program-output:: openag cloud logout --help
 
-.. program-output:: openag user show --help
+.. program-output:: openag cloud create_farm --help
 
-.. program-output:: openag user logout --help
+.. program-output:: openag cloud list_farms --help
 
-Farm
-----
+.. program-output:: openag cloud init_farm --help
 
-The subcommand :code:`openag farm` provides tools for managing the cloud mirror
-of your data. Essentially, you can create a "farm" on the server that
-represents your food computer and then mirror your instance's data into it.
-
-.. program-output:: openag farm create --help
-
-.. program-output:: openag farm list --help
-
-.. program-output:: openag farm init --help
-
-.. program-output:: openag farm show --help
-
-.. program-output:: openag farm deinit --help
+.. program-output:: openag cloud deinit_farm --help
 
 DB
 --
@@ -58,3 +44,15 @@ instance.
 .. program-output:: openag db show --help
 
 .. program-output:: openag db load_fixture --help
+
+Firmware
+--------
+
+The subcommand :code:`openag firmware` provides tools for generating and
+compiling code to run on the microcontroller of the system.
+
+.. program-output:: openag firmware init --help
+
+.. program-output:: openag firmware run --help
+
+.. program-output:: openag firmware run_module --help

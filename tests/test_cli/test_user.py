@@ -10,7 +10,7 @@ from tests import mock_config
 
 from openag.couch import Server
 from openag.db_names import per_farm_dbs
-from openag.cli.user import show, register, login, logout
+from openag.cli.cloud import show, register, login, logout
 
 @mock_config({
     "cloud_server": {
@@ -48,10 +48,6 @@ def test_user_without_cloud_server(config):
 def test_user_with_cloud_server(config):
     runner = CliRunner()
 
-    # Show -- Should raise an error because the user is not logged in
-    res = runner.invoke(show)
-    assert res.exit_code, res.output
-
     # Register -- Should work
     httpretty.register_uri(
         httpretty.HEAD, "http://test.test:5984/_users"
@@ -62,10 +58,6 @@ def test_user_with_cloud_server(config):
     )
     res = runner.invoke(register, input="test\ntest\ntest\n")
     assert res.exit_code == 0, res.exception or res.output
-
-    # Show -- Should raise an error because the user is not logged in
-    res = runner.invoke(show)
-    assert res.exit_code, res.exception or res.output
 
     # Login -- Should work
     httpretty.register_uri(
@@ -80,17 +72,9 @@ def test_user_with_cloud_server(config):
     assert res.exit_code, res.output
     assert isinstance(res.exception, SystemExit)
 
-    # Show -- Should work
-    res = runner.invoke(show)
-    assert res.exit_code == 0, res.exception or res.output
-
     # Logout -- Should work
     res = runner.invoke(logout)
     assert res.exit_code == 0, res.exception or res.output
-
-    # Show -- Should raise an error because the user is not logged in
-    res = runner.invoke(show)
-    assert res.exit_code, res.output
 
 @mock_config({
     "cloud_server": {

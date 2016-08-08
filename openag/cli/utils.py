@@ -32,8 +32,8 @@ def check_for_cloud_user():
     """
     if not config["cloud_server"]["username"]:
         raise ClickException(
-            "Not logged into cloud server. Run `openag user register` to "
-            "create a user account or `openag user login` to log in with an "
+            "Not logged into cloud server. Run `openag cloud register` to "
+            "create a user account or `openag cloud login` to log in with an "
             "existing account"
         )
 

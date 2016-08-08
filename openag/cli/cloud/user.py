@@ -1,24 +1,11 @@
 import click
 
 from openag.couch import Server
-from farm import deinit as deinit_farm
-from utils import check_for_cloud_server, check_for_cloud_user
-from config import config
+from .farm import deinit_farm
+from ..utils import check_for_cloud_server, check_for_cloud_user
+from ..config import config
 
-@click.group()
-def user():
-    """ Manage your cloud user account """
-
-@user.command()
-def show():
-    """ Shows the name of the current user """
-    check_for_cloud_server()
-    check_for_cloud_user()
-    click.echo(
-        "Logged in as user \"{}\"".format(config["cloud_server"]["username"])
-    )
-
-@user.command()
+@click.command()
 @click.option("--username", prompt=True, help="Username for the account")
 @click.option(
     "--password", prompt=True, hide_input=True, confirmation_prompt=True,
@@ -33,7 +20,7 @@ def register(username, password):
     server = Server(config["cloud_server"]["url"])
     server.create_user(username, password)
 
-@user.command()
+@click.command()
 @click.option("--username", prompt=True, help="Username for the account")
 @click.option(
     "--password", prompt=True, hide_input=True, help="Password for the account"
@@ -54,7 +41,7 @@ def login(username, password):
     config["cloud_server"]["username"] = username
     config["cloud_server"]["password"] = password
 
-@user.command()
+@click.command()
 @click.pass_context
 def logout(ctx):
     """ Log out of your user account """

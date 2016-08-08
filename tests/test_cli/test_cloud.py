@@ -16,7 +16,8 @@ from openag.cli.cloud import init, show, deinit
     "cloud_server": {
         "url": None,
         "username": None,
-        "password": None
+        "password": None,
+        "farm_name": None
     },
     "local_server": {
         "url": None

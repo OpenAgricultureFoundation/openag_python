@@ -1,20 +1,11 @@
 import click
 from urlparse import urlparse
 
-import utils
-from user import logout as logout_user
-from config import config
+from .. import utils
+from ..config import config
+from .user import logout as logout_user
 
-@click.group()
-def cloud():
-    """
-    Select a cloud server to use.
-
-    Provides commands for selecting a cloud server with which to exchange grow
-    data.
-    """
-
-@cloud.command()
+@click.command()
 @click.argument("cloud_url")
 def init(cloud_url):
     """
@@ -37,7 +28,7 @@ def init(cloud_url):
         utils.replicate_global_dbs(cloud_url=cloud_url)
     config["cloud_server"]["url"] = cloud_url
 
-@cloud.command()
+@click.command()
 def show():
     """
     Shows the URL of the current cloud server or throws an error if no cloud
@@ -47,8 +38,16 @@ def show():
     click.echo("Using cloud server at \"{}\"".format(
         config["cloud_server"]["url"]
     ))
+    if config["cloud_server"]["username"]:
+        click.echo(
+            "Logged in as user \"{}\"".format(config["cloud_server"]["username"])
+        )
+    if config["cloud_server"]["farm_name"]:
+        click.echo(
+            "Using farm \"{}\"".format(config["cloud_server"]["farm_name"])
+        )
 
-@cloud.command()
+@click.command()
 @click.pass_context
 def deinit(ctx):
     """
