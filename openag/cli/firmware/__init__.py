@@ -55,7 +55,6 @@ def codegen_options(f):
 @click.group("firmware")
 def firmware():
     """ Tools for dealing with firmware modules """
-    pass
 
 @firmware.command()
 @board_option
@@ -89,6 +88,14 @@ def run(
 ):
     """ Generate code for this project and run it """
     project_dir = os.path.abspath(project_dir)
+
+    # Make sure the project has been initialized
+    pio_config = os.path.join(project_dir, "platformio.ini")
+    if not os.path.isfile(pio_config):
+        raise click.ClickException(
+            "Not an OpenAg firmware project. To initialize a new project "
+            "please use the `openag firmware init` command"
+        )
 
     # Get the list of module types
     module_types = {}
@@ -254,7 +261,8 @@ def run(
     if target:
         command.append("-t")
         command.append(target)
-    subprocess.call(command, cwd=project_dir)
+    if subprocess.call(command, cwd=project_dir):
+        raise click.ClickException("Compilation failed")
 
 @firmware.command()
 @click.argument("arguments", nargs=-1)

@@ -29,8 +29,16 @@ class CSVCommPlugin(Plugin):
                                         mod_name=mod_name,input_name=input_name
                                     )
                                 )
+                        elif input_type == "std_msgs/Float32":
+                            f.writeln("std_msgs::Float32 val;")
+                            f.writeln("val.data = in_str.toFloat();")
+                            f.writeln(
+                                "{mod_name}.set_{input_name}(val);".format(
+                                    mod_name=mod_name, input_name=input_name
+                                )
+                            )
                         else:
-                            raise RuntimeException(
+                            raise RuntimeError(
                                 "CSV plugin doesn't support inputs of type " +
                                 input_type
                             )
