@@ -55,6 +55,8 @@ recipe.
 """
 
 Recipe = Schema({
+    "name": Any(str, unicode),
+    "description": Any(str, unicode),
     Required("format"): Any(str, unicode),
     Required("operations"): object
 }, extra=REMOVE_EXTRA)
