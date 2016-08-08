@@ -119,8 +119,11 @@ class Server(_Server):
             doc["_id"] = doc_id
             db = self[db_name]
             if doc_id in db:
-                doc["_rev"] = db[doc_id]["_rev"]
-            self[db_name][doc_id] = doc
+                old_doc = db[doc_id]
+                doc["_rev"] = old_doc["_rev"]
+                if doc == old_doc:
+                    continue
+            db[doc_id] = doc
 
     def _folder_to_dict(self, path):
         """
