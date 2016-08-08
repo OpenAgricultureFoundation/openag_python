@@ -31,7 +31,12 @@ class CSVCommPlugin(Plugin):
                                 )
                         elif input_type == "std_msgs/Float32":
                             f.writeln("std_msgs::Float32 val;")
-                            f.writeln("val.data = in_str.toFloat();")
+                            f.writeln(
+                                "val.data = in_str.substring({prefix_len})"
+                                ".toFloat();".format(
+                                    prefix_len=len(prefix)
+                                )
+                            )
                             f.writeln(
                                 "{mod_name}.set_{input_name}(val);".format(
                                     mod_name=mod_name, input_name=input_name
