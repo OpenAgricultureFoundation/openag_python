@@ -107,6 +107,7 @@ def run(
         for _id in db:
             if _id.startswith("_"):
                 continue
+            print "Parsing firmware module type \"{}\" from server".format(_id)
             module_types[_id] = FirmwareModuleType(db[_id])
     # Check for working modules in the lib folder
     # Do this second so project-local values overwrite values from the server
@@ -118,6 +119,8 @@ def run(
         config_path = os.path.join(dir_path, "module.json")
         if os.path.isfile(config_path):
             with open(config_path) as f:
+                print "Parsing firmware module type \"{}\" from lib "
+                "folder".format(dir_name)
                 module_types[dir_name] = FirmwareModuleType(json.load(f))
 
     # Update the module types using the categories
@@ -139,15 +142,16 @@ def run(
     modules = {}
     # Read from the local couchdb server
     if modules_file:
-        modules = json.load(modules_file)
-        modules = {
-            _id: FirmwareModule(info) for _id, info in modules.items()
-        }
+        _modules = json.load(modules_file)
+        for _id, info in _modules.items():
+            print "Parsing firmware module \"{}\"".format(_id)
+            modules[_id] = FirmwareModule(info)
     elif local_server:
         db = server[FIRMWARE_MODULE]
         for _id in db:
             if _id.startswith("_"):
                 continue
+            print "Parsing firmware module \"{}\"".format(_id)
             modules[_id] = FirmwareModule(db[_id])
     else:
         raise click.ClickException("No modules specified for the project")

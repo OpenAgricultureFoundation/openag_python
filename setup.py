@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 if sys.version_info < (2,7) or sys.version_info.major > 2:
     sys.exit('Only Python 2.7 is supported')
 
-readme_path = os.path.join(os.path.dirname(__file__), "README.md")
+readme_path = os.path.join(os.path.dirname(__file__), "README.rst")
 with open(readme_path) as f:
     readme = f.read()
 
