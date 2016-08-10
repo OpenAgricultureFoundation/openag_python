@@ -6,6 +6,7 @@ import json
 import requests
 from urllib import quote
 from couchdb import Server as _Server
+from couchdb.http import ResourceNotFound
 from urlparse import urljoin
 
 class Server(_Server):

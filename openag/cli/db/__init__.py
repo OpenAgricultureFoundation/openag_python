@@ -5,7 +5,7 @@ import click
 from couchdb.http import urljoin
 
 from openag import _design
-from openag.couch import Server
+from openag.couch import Server, ResourceNotFound
 from openag.db_names import all_dbs
 from .. import utils
 from ..config import config
@@ -17,7 +17,7 @@ def db():
 
 @db.command()
 @click.option("--db_url", default="http://localhost:5984")
-@click.option("--api_url", default="http://localhost:5000")
+@click.option("--api_url")
 def init(db_url, api_url):
     """
     Initialize the database server. Sets some configuration parameters on the
@@ -39,9 +39,12 @@ def init(db_url, api_url):
     for section, values in db_config.items():
         for param, value in values.items():
             url = urljoin(server.resource.url, "_config", section, param)
-            current_val = server.resource.session.request(
-                "GET", url
-            )[2].read().strip()
+            try:
+                current_val = server.resource.session.request(
+                    "GET", url
+                )[2].read().strip()
+            except ResourceNotFound:
+                current_val = None
             desired_val = '"{}"'.format(value.replace('"', '\\"'))
             if current_val != desired_val:
                 status = server.resource.session.request(
@@ -101,4 +104,6 @@ def load_fixture(fixture_file):
         db = server[db_name]
         for item in items:
             item_id = item["_id"]
+            if item_id in db:
+                item["_rev"] = db[item_id]["_rev"]
             db[item_id] = item

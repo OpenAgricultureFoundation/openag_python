@@ -116,27 +116,63 @@ def test_load_fixture_with_local_server(config):
     runner = CliRunner()
 
     with runner.isolated_filesystem():
+        global doc
+        doc = {
+            "_id": "test",
+            "format": "test",
+            "operations": ["test", "test"]
+        }
         with open("fixture.json", "w+") as f:
             json.dump({
-                "recipes": [
-                    {
-                        "_id": "test",
-                        "format": "test",
-                        "operations": ["test", "test"]
-                    }
-                ]
+                "recipes": [doc]
             }, f)
 
         # Load_fixture -- Should work
         httpretty.register_uri(
             httpretty.HEAD, "http://localhost:5984/recipes"
         )
+        def test_recipe_exists(request, uri, headers):
+            global doc
+            if "_rev" in doc:
+                return 200, headers, ""
+            else:
+                return 404, headers, ""
+        httpretty.register_uri(
+            httpretty.HEAD, "http://localhost:5984/recipes/test",
+            content_type="application/json", body=test_recipe_exists
+        )
+        def get_test_recipe(request, uri, headers):
+            global doc
+            if "_rev" in doc:
+                return 200, headers, json.dumps(doc)
+            else:
+                return 404, headers, ""
+        httpretty.register_uri(
+            httpretty.GET, "http://localhost:5984/recipes/test",
+            content_type="application/json", body=get_test_recipe
+        )
+        def create_test_recipe(request, uri, headers):
+            global doc
+            in_doc = json.loads(request.body)
+            if "_rev" in doc:
+                if "_rev" not in in_doc or in_doc["_rev"] != doc["_rev"]:
+                    return 409, headers, json.dumps({
+                        "error": "conflict",
+                        "reason": "Document update conflict"
+                    })
+                else:
+                    doc["_rev"] = doc["_rev"] = "a"
+            else:
+                doc["_rev"] = "a"
+            return 200, headers, json.dumps({
+                "id": doc["_id"], "rev": doc["_rev"]
+            })
         httpretty.register_uri(
             httpretty.PUT, "http://localhost:5984/recipes/test",
-            content_type="application/json", body=json.dumps({
-                "id": "test",
-                "rev": "a"
-            })
+            content_type="application/json", body=create_test_recipe
         )
+        res = runner.invoke(load_fixture, ["fixture.json"])
+        assert res.exit_code == 0, res.exception or res.output
+
         res = runner.invoke(load_fixture, ["fixture.json"])
         assert res.exit_code == 0, res.exception or res.output

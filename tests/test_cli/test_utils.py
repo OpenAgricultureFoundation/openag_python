@@ -59,8 +59,19 @@ def test_replicate_per_farm_dbs(config, replicate):
         remote_db_name = "http://test:test@test.test:5984/"+quote("test/test/"+db_name,"")
         replicate.assert_any_call(db_name, remote_db_name, continuous=True)
 
+@mock_config({
+    "cloud_server": {
+        "url": "http://test.test:5984",
+        "username": "test",
+        "password": "test",
+        "farm_name": "test"
+    },
+    "local_server": {
+        "url": "http://localhost:5984"
+    }
+})
 @mock.patch.object(Server, "cancel_replication")
-def test_cancel_per_farm_db_replication(cancel_replication):
+def test_cancel_per_farm_db_replication(config, cancel_replication):
     cancel_per_farm_db_replication()
     assert cancel_replication.call_count == len(per_farm_dbs)
     for db_name in per_farm_dbs:

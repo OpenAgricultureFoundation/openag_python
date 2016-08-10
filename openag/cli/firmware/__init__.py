@@ -278,8 +278,11 @@ def run_module(
     # Read the module config
     here = os.path.abspath(project_dir)
     module_json_path = os.path.join(here, "module.json")
-    with open(module_json_path) as f:
-        module_type = FirmwareModuleType(json.load(f))
+    try:
+        with open(module_json_path) as f:
+            module_type = FirmwareModuleType(json.load(f))
+    except IOError:
+        raise click.ClickException("No module.json file found")
 
     # Create the build directory
     build_path = os.path.join(here, "_build")
