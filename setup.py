@@ -7,8 +7,7 @@ setup(
     install_requires=[
         'couchdb>=1.0.1',
         'requests>=2.10.0',
-        'voluptuous>=0.8.11',
-        'platformio>=2.11.2'
+        'voluptuous>=0.8.11'
     ],
     extras_require={
         "test": [
