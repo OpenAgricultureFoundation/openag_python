@@ -52,7 +52,7 @@ EXAMPLE_JSON = json.dumps({
     }
 })
 
-def test_basic_codegen():
+def test_run_no_modules():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -72,7 +72,7 @@ def test_basic_codegen():
         res = runner.invoke(run, ["-f", "modules.json"])
         assert res.exit_code == 0, res.exception or res.output
 
-def test_basic_plugins():
+def test_run_no_modules_with_plugins():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -99,7 +99,7 @@ def test_basic_plugins():
         )
         assert res.exit_code == 0, res.exception or res.output
 
-def test_codegen_simple_module():
+def test_run_module():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -123,7 +123,7 @@ def test_codegen_simple_module():
         )
         assert res.exit_code == 0, res.exception or res.output
 
-def test_codegen_custom_module_json():
+def test_run_single_module():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -148,4 +148,50 @@ def test_codegen_custom_module_json():
             }, f)
 
         res = runner.invoke(run, ["-f", "modules.json"])
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        res = runner.invoke(run, [
+            "-f", "modules.json", "-p", "csv"
+        ])
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        res = runner.invoke(run, [
+            "-f", "modules.json", "-p", "ros"
+        ])
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+def test_run_multiple_modules():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        res = runner.invoke(init)
+        assert res.exit_code == 0, res.exception or res.output
+
+        here = os.getcwd()
+        lib_folder = os.path.join(here, "lib")
+        module_folder = os.path.join(lib_folder, "module")
+        os.mkdir(module_folder)
+        with open(os.path.join(module_folder, "module.h"), "w+") as f:
+            f.write(EXAMPLE_HEADER)
+        with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
+            f.write(EXAMPLE_SOURCE)
+        with open(os.path.join(module_folder, "module.json"), "w+") as f:
+            f.write(EXAMPLE_JSON)
+        with open(os.path.join(here, "modules.json"), "w+") as f:
+            json.dump({
+                "module_a": {"type": "module"},
+                "module_b": {"type": "module"}
+            }, f)
+
+        res = runner.invoke(run, ["-f", "modules.json"])
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        res = runner.invoke(run, [
+            "-f", "modules.json", "-p", "csv"
+        ])
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        res = runner.invoke(run, [
+            "-f", "modules.json", "-p", "ros"
+        ])
         assert res.exit_code == 0, repr(res.exception) or res.output

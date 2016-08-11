@@ -64,12 +64,14 @@ def init(board, project_dir, **kwargs):
     project_dir = os.path.abspath(project_dir)
 
     # Initialize the platformio project
-    init = subprocess.Popen(
-        ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
-        cwd=project_dir
-    )
-    init.communicate("y\n")
-    if (init.wait()):
+    click.echo("Initializing platformio project")
+    with open("/dev/null", "wb") as null:
+        init = subprocess.Popen(
+            ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
+            stdout=null, cwd=project_dir
+        )
+        init.communicate("y\n")
+    if init.returncode != 0:
         raise RuntimeError(
             "Failed to initialize PlatformIO project"
         )
@@ -78,6 +80,7 @@ def init(board, project_dir, **kwargs):
     modules_path = os.path.join(project_dir, "modules.json")
     with open(modules_path, "w+") as f:
         json.dump({}, f)
+    click.echo("OpenAg firmware project initialized!")
 
 @firmware.command()
 @project_dir_option
@@ -107,7 +110,9 @@ def run(
         for _id in db:
             if _id.startswith("_"):
                 continue
-            print "Parsing firmware module type \"{}\" from server".format(_id)
+            click.echo(
+                "Parsing firmware module type \"{}\" from server".format(_id)
+            )
             module_types[_id] = FirmwareModuleType(db[_id])
     # Check for working modules in the lib folder
     # Do this second so project-local values overwrite values from the server
@@ -119,8 +124,10 @@ def run(
         config_path = os.path.join(dir_path, "module.json")
         if os.path.isfile(config_path):
             with open(config_path) as f:
-                print "Parsing firmware module type \"{}\" from lib "
-                "folder".format(dir_name)
+                click.echo(
+                    "Parsing firmware module type \"{}\" from lib "
+                    "folder".format(dir_name)
+                )
                 module_types[dir_name] = FirmwareModuleType(json.load(f))
 
     # Update the module types using the categories
@@ -144,14 +151,16 @@ def run(
     if modules_file:
         _modules = json.load(modules_file)
         for _id, info in _modules.items():
-            print "Parsing firmware module \"{}\"".format(_id)
+            click.echo(
+                "Parsing firmware module \"{}\" from modules file".format(_id)
+            )
             modules[_id] = FirmwareModule(info)
     elif local_server:
         db = server[FIRMWARE_MODULE]
         for _id in db:
             if _id.startswith("_"):
                 continue
-            print "Parsing firmware module \"{}\"".format(_id)
+            click.echo("Parsing firmware module \"{}\"".format(_id))
             modules[_id] = FirmwareModule(db[_id])
     else:
         raise click.ClickException("No modules specified for the project")

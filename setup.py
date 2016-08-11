@@ -23,7 +23,7 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python :: 2.7",
     ],
-    packages=find_packages(),
+    packages=find_packages(exclude=("tests", "tests.*")),
     install_requires=[
         'couchdb>=1.0.1',
         'requests>=2.10.0',

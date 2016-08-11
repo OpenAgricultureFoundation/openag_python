@@ -100,10 +100,13 @@ def load_fixture(fixture_file):
     local_url = config["local_server"]["url"]
     server = Server(local_url)
     fixture = json.load(fixture_file)
-    for db_name, items in fixture.items():
+    for db_name, _items in fixture.items():
         db = server[db_name]
-        for item in items:
-            item_id = item["_id"]
-            if item_id in db:
-                item["_rev"] = db[item_id]["_rev"]
-            db[item_id] = item
+        with click.progressbar(
+            _items, label=db_name, length=len(_items)
+        ) as items:
+            for item in items:
+                item_id = item["_id"]
+                if item_id in db:
+                    item["_rev"] = db[item_id]["_rev"]
+                db[item_id] = item
