@@ -46,6 +46,7 @@ class ROSCommPlugin(Plugin):
     def setup_plugin(self, f):
         f.writeln("Serial.begin(57600);")
         f.writeln("nh.initNode();")
+        f.writeln("nh.advertise(pub_diagnostics);")
 
     def setup_module(self, mod_name, f):
         mod_info = self.modules[mod_name]
@@ -78,7 +79,7 @@ class ROSCommPlugin(Plugin):
         ))
         f.writeln('status_msg.name = "{mod_name}";'.format(mod_name=mod_name))
         f.writeln(
-            'int {mod_name}_buf_len = {mod_name}.status_msg.length();'.format(
+            'int {mod_name}_buf_len = {mod_name}.status_msg.length()+1;'.format(
                 mod_name=mod_name
             )
         )
