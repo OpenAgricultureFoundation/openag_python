@@ -164,39 +164,26 @@ def run(
         mod_info["header_file"] = mod_type["header_file"]
         mod_info["class_name"] = mod_type["class_name"]
         # Update the arguments
-        raw_args = mod_info.get("arguments", [])
-        real_args = []
-        i = 0
-        for arg_info in mod_type["arguments"]:
-            if i >= len(raw_args):
-                if "default" in arg_info:
-                    real_args.append(arg_info["default"])
-                else:
-                    raise click.ClickException(
-                        'Not enough module arguments supplied for module "{}" '
-                        "(expecting {})".format(
-                            mod_id, len(mod_type["arguments"])
-                        )
-                    )
+        args = list(mod_info.get("arguments", []))
+        if len(args) > len(mod_type["arguments"]):
+            raise click.ClickException(
+                'Too many arguments specified for module "{}". (Got {}, '
+                'expected {})'.format(
+                    mod_id, len(args), len(mod_type["arguments"])
+                )
+            )
+        for i in range(len(args), len(mod_type["arguments"])):
+            arg_info = mod_type["arguments"][i]
+            if "default" in arg_info:
+                args.append(arg_info["default"])
             else:
-                val = raw_args[i]
-                if arg_info["type"] == "int":
-                    val = int(val)
-                elif arg_info["type"] == "float":
-                    val = float(val)
-                elif arg_info["type"] == "bool":
-                    if val.lower() == "true":
-                        val = True
-                    elif val.lower() == "false":
-                        val = False
-                    else:
-                        raise click.BadParameter(
-                            "Argument number {} should be a boolean value "
-                            '("true" or "false")'.format(i)
-                        )
-                real_args.append(val)
-            i += 1
-        mod_info["arguments"] = real_args
+                raise click.ClickException(
+                    'Not enough module arguments supplied for module "{}" '
+                    '(Got {}, expecting {})'.format(
+                        mod_id, len(args), len(mod_type["arguments"])
+                    )
+                )
+        mod_info["arguments"] = args
         # Apply mappings to inputs and outputs
         mappings = mod_info.get("mappings", {})
         mod_inputs = {}
@@ -312,11 +299,37 @@ def run_module(
             os.remove(link_name)
         os.symlink(source, link_name)
 
+    # Parse the arguments based on the module type
+    real_args = []
+    for i in range(len(arguments)):
+        if i >= len(module_type["arguments"]):
+            raise click.ClickException(
+                "Too many module arguments specified. (Got {}, expected "
+                "{})".format(len(arguments), len(module_type["arguments"]))
+            )
+        val = arguments[i]
+        arg_info = module_type["arguments"][i]
+        if arg_info["type"] == "int":
+            val = int(val)
+        elif arg_info["type"] == "float":
+            val = float(val)
+        elif arg_info["type"] == "bool":
+            if val.lower() == "true":
+                val = True
+            elif val.lower() == "false":
+                val = False
+            else:
+                raise click.BadParameter(
+                    "Argument number {} should be a boolean value "
+                    '("true" or "false")'.format(i)
+                )
+        real_args.append(val)
+
     # Write the modules.json file
     modules = {
         "module": FirmwareModule({
             "type": "module",
-            "arguments": list(arguments)
+            "arguments": list(real_args)
         })
     }
     modules_file = os.path.join(build_path, "modules.json")
