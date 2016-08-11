@@ -164,7 +164,7 @@ def run(
         mod_info["header_file"] = mod_type["header_file"]
         mod_info["class_name"] = mod_type["class_name"]
         # Update the arguments
-        raw_args = mod_info["arguments"]
+        raw_args = mod_info.get("arguments", [])
         real_args = []
         i = 0
         for arg_info in mod_type["arguments"]:
