@@ -33,3 +33,4 @@ WATER_ELECTRICAL_CONDUCTIVITY = EnvVar(
 )
 RECIPE_START = EnvVar("recipe_start", "Represents the start of a recipe")
 RECIPE_END = EnvVar("recipe_end", "Represents the end of a recipe")
+MARKER = EnvVar("marker", "Marks some user-defined event")
