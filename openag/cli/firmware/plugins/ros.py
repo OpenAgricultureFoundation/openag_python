@@ -2,13 +2,16 @@ from ..base import Plugin
 
 class ROSCommPlugin(Plugin):
     def header_files(self):
-        return set(["ros.h", "diagnostic_msgs/DiagnosticStatus.h"])
+        return set([
+            "ros.h", "diagnostic_msgs/DiagnosticStatus.h",
+            "diagnostic_msgs/DiagnosticArray.h"
+        ])
 
     def write_declarations(self, f):
         f.writeln("ros::NodeHandle nh;")
-        f.writeln("diagnostic_msgs::DiagnosticStatus status_msg;")
+        f.writeln("diagnostic_msgs::DiagnosticArray status_array;")
         f.writeln(
-            'ros::Publisher pub_diagnostics("/diagnostics", &status_msg);'
+            'ros::Publisher pub_diagnostics("/diagnostics", &status_array);'
         )
         for mod_name, mod_info in self.modules.items():
             # Define publishers for all outputs
@@ -46,6 +49,7 @@ class ROSCommPlugin(Plugin):
     def setup_plugin(self, f):
         f.writeln("Serial.begin(57600);")
         f.writeln("nh.initNode();")
+        f.writeln("nh.advertise(pub_diagnostics);")
 
     def setup_module(self, mod_name, f):
         mod_info = self.modules[mod_name]
@@ -72,11 +76,24 @@ class ROSCommPlugin(Plugin):
             )
         )
 
+    def start_read_module_status(self, f):
+        f.writeln(
+            "diagnostic_msgs::DiagnosticStatus statuses[{num_modules}];".format(
+                num_modules = len(self.modules)
+            )
+        )
+        self.read_module_index = 0
+
     def read_module_status(self, mod_name, f):
-        f.writeln("status_msg.level = {mod_name}.status_level;".format(
+        f.writeln("diagnostic_msgs::DiagnosticStatus {mod_name}_status;".format(
             mod_name=mod_name
         ))
-        f.writeln('status_msg.name = "{mod_name}";'.format(mod_name=mod_name))
+        f.writeln("{mod_name}_status.level = {mod_name}.status_level;".format(
+            mod_name=mod_name
+        ))
+        f.writeln('{mod_name}_status.name = "{mod_name}";'.format(
+            mod_name=mod_name
+        ))
         f.writeln(
             'int {mod_name}_buf_len = {mod_name}.status_msg.length();'.format(
                 mod_name=mod_name
@@ -89,11 +106,20 @@ class ROSCommPlugin(Plugin):
             '{mod_name}.status_msg.toCharArray({mod_name}_buf, '
             '{mod_name}_buf_len);'.format(mod_name=mod_name)
         )
-        f.writeln('status_msg.message = {mod_name}_buf;'.format(
+        f.writeln('{mod_name}_status.message = {mod_name}_buf;'.format(
             mod_name=mod_name
         ))
-        f.writeln('status_msg.hardware_id = "none";');
-        f.writeln("pub_diagnostics.publish(&status_msg);")
+        f.writeln('{mod_name}_status.hardware_id = "none";'.format(
+            mod_name=mod_name
+        ));
+        f.writeln('statuses[{i}] = {mod_name}_status;'.format(
+            i=self.read_module_index, mod_name=mod_name
+        ));
+        self.read_module_index += 1
+
+    def end_read_module_status(self, f):
+        f.writeln("status_array.status = statuses;")
+        f.writeln("pub_diagnostics.publish(&status_array);")
 
     def pub_name(self, mod_name, output_name):
         return "_".join(["pub", mod_name, output_name])

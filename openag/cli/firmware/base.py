@@ -171,10 +171,24 @@ class Plugin:
         """
         pass
 
+    def start_read_module_status(self, f):
+        """
+        Should write to `CodeWriter` instance `f` statements that handle
+        starting the process of reading the statuses of the modules.
+        """
+        pass
+
     def read_module_status(self, mod_name, f):
         """
         Should write to `CodeWriter` instance `f` statments that handle the
         current status of the module `mod_name`
+        """
+        pass
+
+    def end_read_module_status(self, f):
+        """
+        Should write to `CodeWriter` instance `f` statements that handle
+        finishing the process of reading the statuses of the modules.
         """
         pass
 
@@ -270,9 +284,13 @@ class CodeGen(Plugin):
             # Read statuses of all modules
             f.writeln("// Read statuses of all modules")
             with f._if("should_read_statuses()"):
+                for plugin in self.plugins:
+                    plugin.start_read_module_status(f)
                 for mod_name in self.modules:
                     for plugin in self.plugins:
                         plugin.read_module_status(mod_name, f)
+                for plugin in self.plugins:
+                    plugin.end_read_module_status(f)
 
     def dependencies(self):
         return set([345])
