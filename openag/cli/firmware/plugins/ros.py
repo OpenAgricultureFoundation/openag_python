@@ -82,6 +82,9 @@ class ROSCommPlugin(Plugin):
                 num_modules = len(self.modules)
             )
         )
+        f.writeln("status_array.status_length = {num_modules};".format(
+            num_modules=len(self.modules)
+        ))
         self.read_module_index = 0
 
     def read_module_status(self, mod_name, f):
