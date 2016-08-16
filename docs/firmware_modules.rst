@@ -18,13 +18,14 @@ sensor at some rate). This :cpp:func:`update` function will be called in the
 :cpp:class:`Module` superclass defines a :cpp:member:`status_level` attribute
 which the firmware module should use to report its current status. Valid value
 for this attribute (all defined in the header file for the :cpp:class:`Module`
-superclass) are :cpp:obj:`OK` (which means that the module is "ok"), WARN
-(which means that there is some warning for the module), and ERROR (which means
-that there is an error preventing the module from working as desired). The
-superclass also defines a :cpp:member:`status_msg` attribute which is a
-:cpp:class:`String` that the firmware module should use to describe the status
-of the module. This is generally an empty string when the status level is "ok"
-and an error message when the status level is "warn" or "error".
+superclass) are :c:data:`OK` (which means that the module is "ok"),
+:c:data:`WARN` (which means that there is some warning for the module), and
+:c:data:`ERROR` (which means that there is an error preventing the module from
+working as desired). The superclass also defines a :cpp:member:`status_msg`
+attribute which is a :cpp:class:`String` that the firmware module should use to
+describe the status of the module. This is generally an empty string when the
+status level is "ok" and an error message when the status level is "warn" or
+"error".
 
 In addition to these standard functions and attributes (which are all defined
 in the header file for the :cpp:class:`Module` class), the module must define a

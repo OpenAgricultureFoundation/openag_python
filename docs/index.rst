@@ -15,10 +15,11 @@ setting up and interacting with a system.
 .. toctree::
    :maxdepth: 2
 
-   object_model
-   variable_types
    cli
+   object_model
+   db_names
    database_queries
+   variable_types
    recipes
    firmware_modules
 
