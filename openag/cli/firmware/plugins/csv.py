@@ -13,7 +13,14 @@ class CSVCommPlugin(Plugin):
                     prefix="{},{},".format(mod_name, input_name)
                     with f._if('in_str.startsWith("{}")'.format(prefix)):
                         input_type = input_info["type"]
-                        if input_type == "std_msgs/Bool":
+                        if input_type == "std_msgs/Empty":
+                            f.writeln("std_msgs::Empty val;");
+                            f.writeln(
+                                "{mod_name}.set_{input_name}(val);".format(
+                                    mod_name=mod_name, input_name=input_name
+                                )
+                            )
+                        elif input_type == "std_msgs/Bool":
                             f.writeln("std_msgs::Bool val;")
                             with f._if('in_str.endsWith("true")'):
                                 f.writeln("val.data = true;");
