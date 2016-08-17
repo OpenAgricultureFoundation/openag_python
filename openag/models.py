@@ -6,6 +6,7 @@ __all__ = [
 from voluptuous import Schema, Required, Any, Extra, REMOVE_EXTRA
 
 Environment = Schema({
+    "name": Any(str, unicode),
 }, extra=REMOVE_EXTRA)
 Environment.__doc__ = """
 An :class:`Environment` abstractly represents a single homogenous
