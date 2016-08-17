@@ -34,3 +34,11 @@ WATER_ELECTRICAL_CONDUCTIVITY = EnvVar(
 RECIPE_START = EnvVar("recipe_start", "Represents the start of a recipe")
 RECIPE_END = EnvVar("recipe_end", "Represents the end of a recipe")
 MARKER = EnvVar("marker", "Marks some user-defined event")
+AERIAL_IMAGE = EnvVar(
+    "aerial_image", "Image from above the tray looking down on the plants",
+    "png"
+)
+FRONTAL_IMAGE = EnvVar(
+    "frontal_image", "Image from in front of the tray looking towards the "
+    "plants", "png"
+)
