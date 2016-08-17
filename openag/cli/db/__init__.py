@@ -108,5 +108,8 @@ def load_fixture(fixture_file):
             for item in items:
                 item_id = item["_id"]
                 if item_id in db:
-                    item["_rev"] = db[item_id]["_rev"]
+                    old_item = db[item_id]
+                    item["_rev"] = old_item["_rev"]
+                    if item == old_item:
+                        continue
                 db[item_id] = item
