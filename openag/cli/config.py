@@ -25,8 +25,9 @@ config["local_server"]["url"] - The URL of the local server
 import os
 import json
 import errno
+from click import get_app_dir
 
-CONFIG_FOLDER = os.path.join(os.path.expanduser("~"), ".openag")
+CONFIG_FOLDER = get_app_dir("openag", force_posix=True)
 CONFIG_FILE = os.path.join(CONFIG_FOLDER, "config.json")
 
 class PersistentObj(object):

@@ -21,7 +21,7 @@ def test_replicate_global_dbs(config, replicate):
     for db_name in global_dbs:
         remote_db_name = "http://test.test:5984/" + db_name
         replicate.assert_any_call(
-            remote_db_name, db_name, continuous=True
+            db_name, remote_db_name, db_name, continuous=True
         )
 
 @mock_config({
@@ -37,8 +37,7 @@ def test_cancel_global_db_replication(config, cancel_replication):
     cancel_global_db_replication()
     assert cancel_replication.call_count == len(global_dbs)
     for db_name in global_dbs:
-        remote_db_name = "http://test.test:5984/" + db_name
-        cancel_replication.assert_any_call(remote_db_name)
+        cancel_replication.assert_any_call(db_name)
 
 @mock_config({
     "cloud_server": {
@@ -57,7 +56,7 @@ def test_replicate_per_farm_dbs(config, replicate):
     assert replicate.call_count == len(per_farm_dbs)
     for db_name in per_farm_dbs:
         remote_db_name = "http://test:test@test.test:5984/"+quote("test/test/"+db_name,"")
-        replicate.assert_any_call(db_name, remote_db_name, continuous=True)
+        replicate.assert_any_call(db_name, db_name, remote_db_name, continuous=True)
 
 @mock_config({
     "cloud_server": {

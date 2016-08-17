@@ -64,13 +64,16 @@ def init(board, project_dir, **kwargs):
     project_dir = os.path.abspath(project_dir)
 
     # Initialize the platformio project
-    click.echo("Initializing platformio project")
+    click.echo("Initializing PlatformIO project")
     with open("/dev/null", "wb") as null:
-        init = subprocess.Popen(
-            ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
-            stdout=null, cwd=project_dir
-        )
-        init.communicate("y\n")
+        try:
+            init = subprocess.Popen(
+                ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
+                stdout=null, cwd=project_dir
+            )
+            init.communicate("y\n")
+        except OSError as e:
+            raise RuntimeError("PlatformIO is not installed")
     if init.returncode != 0:
         raise RuntimeError(
             "Failed to initialize PlatformIO project"

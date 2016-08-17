@@ -27,28 +27,29 @@ class Server(_Server):
                 )
         return self[db_name]
 
-    def replicate(self, source, target, continuous=False):
+    def replicate(self, doc_id, source, target, continuous=False):
         """
         Starts a replication from the `source` database to the `target`
-        database.
+        database by writing a document with the id `doc_id` to the "_relicator"
+        database
         """
-        if source in self["_replicator"]:
+        if doc_id in self["_replicator"]:
             return
         data = {
-            "_id": source,
+            "_id": doc_id,
             "source": source,
             "target": target,
             "continuous": continuous
         }
-        self["_replicator"][source] = data
+        self["_replicator"][doc_id] = data
 
-    def cancel_replication(self, source):
+    def cancel_replication(self, doc_id):
         """
-        Cancels the replication from the `source` database
+        Cancels the replication with the id `doc_id`
         """
-        if source not in self["_replicator"]:
+        if doc_id not in self["_replicator"]:
             return
-        del self["_replicator"][source]
+        del self["_replicator"][doc_id]
 
     def create_user(self, username, password):
         """

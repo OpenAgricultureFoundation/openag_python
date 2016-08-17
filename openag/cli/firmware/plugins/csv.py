@@ -13,7 +13,14 @@ class CSVCommPlugin(Plugin):
                     prefix="{},{},".format(mod_name, input_name)
                     with f._if('in_str.startsWith("{}")'.format(prefix)):
                         input_type = input_info["type"]
-                        if input_type == "std_msgs/Bool":
+                        if input_type == "std_msgs/Empty":
+                            f.writeln("std_msgs::Empty val;");
+                            f.writeln(
+                                "{mod_name}.set_{input_name}(val);".format(
+                                    mod_name=mod_name, input_name=input_name
+                                )
+                            )
+                        elif input_type == "std_msgs/Bool":
                             f.writeln("std_msgs::Bool val;")
                             with f._if('in_str.endsWith("true")'):
                                 f.writeln("val.data = true;");
@@ -49,6 +56,15 @@ class CSVCommPlugin(Plugin):
                             )
 
     def on_output(self, mod_name, output_name, f):
+        # For now, we can only handle outputs whose messages has an attribute
+        # "data" that can be directly printed with Serial.print
+        msg_type = self.modules[mod_name]["outputs"][output_name]["type"]
+        if msg_type not in [
+            "std_msgs/Bool", "std_msgs/Float32"
+        ]:
+            raise RuntimeError(
+                "CSV plugin doesn't support outputs of type " + msg_type
+            )
         f.writeln('Serial.print("data,{mod_name},{output_name},");'.format(
             mod_name=mod_name, output_name=output_name
         ))

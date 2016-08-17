@@ -26,3 +26,6 @@ with descriptions of each variable
 
 .. autodata:: openag.var_types.RECIPE_END
    :annotation:
+
+.. autodata:: openag.var_types.MARKER
+   :annotation:

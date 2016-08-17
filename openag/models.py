@@ -6,6 +6,7 @@ __all__ = [
 from voluptuous import Schema, Required, Any, Extra, REMOVE_EXTRA
 
 Environment = Schema({
+    "name": Any(str, unicode),
 }, extra=REMOVE_EXTRA)
 Environment.__doc__ = """
 An :class:`Environment` abstractly represents a single homogenous
@@ -17,6 +18,7 @@ one :class:`Environment`.
 EnvironmentalDataPoint = Schema({
     Required("environment"): Any(str, unicode),
     Required("variable"): Any(str, unicode),
+    Required("is_manual", default=False): bool,
     Required("is_desired"): bool,
     "value": object,
     Required("timestamp"): float,
@@ -36,6 +38,12 @@ recipe.
     "air_temperature"). The class
     :class:`~openag.var_types.EnvironmentalVariable` contains all valid
     variable names.
+
+.. py:attribute:: is_manual
+
+    (bool) This should be true if the data point represents a manual reading
+    performed by a user and false if it represents an automatic reading from a
+    firmware or software module. Defaults to false.
 
 .. py:attribute:: is_desired
 
@@ -81,15 +89,16 @@ and how to write recipes with them.
 """
 
 
-Input = Schema({
+FirmwareInput = Schema({
     Required("type"): Any(str, unicode),
     Required("categories", default=["actuators"]): ["actuators", "calibration"],
     "description": Any(str, unicode),
 })
-Output = Schema({
+FirmwareOutput = Schema({
     Required("type"): Any(str, unicode),
     Required("categories", default=["sensors"]): ["sensors", "calibration"],
     "description": Any(str, unicode),
+    "accuracy": float,
 })
 
 FirmwareArgument = Schema({
@@ -104,8 +113,8 @@ FirmwareModuleType = Schema({
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),
     Required("arguments", default=[]): [FirmwareArgument],
-    Required("inputs", default={}): {Extra: Input},
-    Required("outputs", default={}): {Extra: Output},
+    Required("inputs", default={}): {Extra: FirmwareInput},
+    Required("outputs", default={}): {Extra: FirmwareOutput},
 }, extra=REMOVE_EXTRA)
 FirmwareModuleType.__doc__ = """
 A :class:`FirmwareModuleType` represents a firmware library for interfacing
@@ -159,8 +168,9 @@ firmware modules.
     inner dictionary must contain the field "type" (the ROS message type
     expected for messages on the topic) and can contain the fields "categories"
     (a list of categories to which this output belongs. Must be a subset of
-    ["sensors", "calibration"] and defaults to ["sensors"]) and "description"
-    (a short description of what the output is for).
+    ["sensors", "calibration"] and defaults to ["sensors"]) a "description" (a
+    short description of what the output is for), and an "accuracy" (a float
+    representing the maximum error of the output values).
 """
 
 FirmwareModule = Schema({
@@ -200,6 +210,14 @@ single physical sensor or actuator.
     name such as `state`.
 """
 
+SoftwareInput = Schema({
+    Required("type"): Any(str, unicode),
+    "description": Any(str, unicode),
+})
+SoftwareOutput = Schema({
+    Required("type"): Any(str, unicode),
+    "description": Any(str, unicode),
+})
 SoftwareArgument = Schema({
     Required("name"): Any(str, unicode),
     "type": Any("int", "float", "bool", "str"),
@@ -219,8 +237,8 @@ SoftwareModuleType = Schema({
     "description": Any(str, unicode),
     Required("arguments", default=[]): [SoftwareArgument],
     Required("parameters", default={}): {Extra: Parameter},
-    Required("inputs", default={}): {Extra: Input},
-    Required("outputs", default={}): {Extra: Output}
+    Required("inputs", default={}): {Extra: SoftwareInput},
+    Required("outputs", default={}): {Extra: SoftwareOutput}
 }, extra=REMOVE_EXTRA)
 SoftwareModuleType.__doc__ = """
 A :class:`SoftwareModuleType` is a ROS node that can be run on the controller
@@ -270,19 +288,15 @@ packages.
     (dict) A nested dictionary mapping names of topics to which this library
     subscribes to dictionaries containing information about those topics. The
     inner dictionaries must contain the field "type" (the ROS message type
-    expected for messages on the topic) and can contain the fields "categories"
-    (a list of categories to which this input belongs. Must be a subset of
-    ["actuators", "calibration"] and defaults to ["actuators"]) and
-    "description" (a short description of what the input is for).
+    expected for messages on the topic) and can contain the field "description"
+    (a short description of what the input is for).
 
 .. py:attribute:: outputs
 
     (dict) A nested dictionary mapping names of topics to which this library
     publishes to dictionaries containing information about those topics. The
     inner dictionary must contain the field "type" (the ROS message type
-    expected for messages on the topic) and can contain the fields "categories"
-    (a list of categories to which this output belongs. Must be a subset of
-    ["sensors", "calibration"] and defaults to ["sensors"]) and "description"
+    expected for messages on the topic) and can contain the field "description"
     (a short description of what the output is for).
 """
 

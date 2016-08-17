@@ -1,7 +1,7 @@
 import os
 import json
 import tempfile
-
+from click import ClickException
 from click.testing import CliRunner
 
 from openag.cli.firmware import init, run, run_module
@@ -115,13 +115,13 @@ def test_run_module():
 
         # Initialize the project
         res = runner.invoke(init)
-        assert res.exit_code == 0, res.exception or res.output
+        assert res.exit_code == 0, repr(res.exception) or res.output
 
         # Run with both plugins -- Should work
         res = runner.invoke(
             run_module, ["-p", "ros", "-p", "csv", "-f", "modules.json"]
         )
-        assert res.exit_code == 0, res.exception or res.output
+        assert res.exit_code == 0, repr(res.exception) or res.output
 
 def test_run_single_module():
     runner = CliRunner()
@@ -195,3 +195,61 @@ def test_run_multiple_modules():
             "-f", "modules.json", "-p", "ros"
         ])
         assert res.exit_code == 0, repr(res.exception) or res.output
+
+def test_csv_broken_output_type():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        res = runner.invoke(init)
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        here = os.getcwd()
+        lib_folder = os.path.join(here, "lib")
+        module_folder = os.path.join(lib_folder, "module")
+        os.mkdir(module_folder)
+        with open(os.path.join(module_folder, "module.h"), "w+") as f:
+            f.write("""
+#ifndef TEST
+#define TEST
+
+#include "Arduino.h"
+#include <std_msgs/UInt8MultiArray.h>
+
+class Module {
+  public:
+    void begin();
+    void update();
+    bool get_output(std_msgs::UInt8MultiArray &msg);
+    uint8_t status_level;
+    String status_msg;
+};
+#endif
+""")
+        with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
+            f.write("""
+#include "module.h"
+
+void Module::begin() { }
+
+void Module::update() { }
+
+bool Module::get_output(std_msgs::UInt8MultiArray &msg) {
+    return true;
+}
+""")
+        with open(os.path.join(module_folder, "module.json"), "w+") as f:
+            json.dump({
+                "class_name": "Module",
+                "header_file": "module.h",
+                "outputs": {
+                    "output": {
+                        "type": "std_msgs/UInt8MultiArray"
+                    }
+                }
+            }, f)
+        with open(os.path.join(here, "modules.json"), "w+") as f:
+            json.dump({"module": {"type": "module"}}, f)
+
+        res = runner.invoke(run, ["-f", "modules.json", "-p", "csv"])
+        assert isinstance(res.exception, RuntimeError), repr(res.exception)
+
