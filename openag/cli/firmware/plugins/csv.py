@@ -56,6 +56,15 @@ class CSVCommPlugin(Plugin):
                             )
 
     def on_output(self, mod_name, output_name, f):
+        # For now, we can only handle outputs whose messages has an attribute
+        # "data" that can be directly printed with Serial.print
+        msg_type = self.modules[mod_name]["outputs"][output_name]["type"]
+        if msg_type not in [
+            "std_msgs/Bool", "std_msgs/Float32"
+        ]:
+            raise RuntimeError(
+                "CSV plugin doesn't support outputs of type " + msg_type
+            )
         f.writeln('Serial.print("data,{mod_name},{output_name},");'.format(
             mod_name=mod_name, output_name=output_name
         ))
