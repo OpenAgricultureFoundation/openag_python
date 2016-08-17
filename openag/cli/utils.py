@@ -66,7 +66,7 @@ def replicate_global_dbs(cloud_url=None, local_url=None):
     server = Server(local_url)
     for db_name in global_dbs:
         server.replicate(
-            urljoin(cloud_url, db_name), db_name, continuous=True,
+            db_name, urljoin(cloud_url, db_name), db_name, continuous=True,
         )
 
 def cancel_global_db_replication():
@@ -75,10 +75,9 @@ def cancel_global_db_replication():
     local server.
     """
     local_url = config["local_server"]["url"]
-    cloud_url = config["cloud_server"]["url"]
     server = Server(local_url)
     for db_name in global_dbs:
-        server.cancel_replication(urljoin(cloud_url, db_name))
+        server.cancel_replication(db_name)
 
 def replicate_per_farm_dbs(cloud_url=None, local_url=None, farm_name=None):
     """
@@ -117,7 +116,7 @@ def replicate_per_farm_dbs(cloud_url=None, local_url=None, farm_name=None):
     for db_name in per_farm_dbs:
         remote_db_name = "{}/{}/{}".format(username, farm_name, db_name)
         server.replicate(
-            db_name, urljoin(cloud_url, remote_db_name),
+            db_name, db_name, urljoin(cloud_url, remote_db_name),
             continuous=True
         )
 
