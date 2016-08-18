@@ -98,7 +98,7 @@ class ROSCommPlugin(Plugin):
             mod_name=mod_name
         ))
         f.writeln(
-            'int {mod_name}_buf_len = {mod_name}.status_msg.length();'.format(
+            'int {mod_name}_buf_len = {mod_name}.status_msg.length()+1;'.format(
                 mod_name=mod_name
             )
         )
