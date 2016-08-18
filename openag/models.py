@@ -302,6 +302,7 @@ packages.
 
 SoftwareModule = Schema({
     Required("type"): Any(str, unicode),
+    "namespace": Any(str, unicode),
     "environment": Any(str, unicode),
     "arguments": [object],
     "parameters": dict,
@@ -315,6 +316,13 @@ A :class:`SoftwareModule` is a single instance of a
 
     (str, required) The ID of the :class:`~openag.models.SoftwareModuleType` of
     this object
+
+.. py:attribute:: namespace
+
+    (str) The name of the ros namespace that should contain the ROS node for
+    this software module. If no value is provided, the environment field is
+    used instead. If no environment is provided, the module is placed in the
+    global namespace.
 
 .. py:attribute:: environment
 
