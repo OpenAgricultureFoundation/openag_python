@@ -171,8 +171,6 @@ def run(
     # Populate the modules with data from their types
     for mod_id, mod_info in modules.items():
         mod_type = module_types[mod_info["type"]]
-        if "pio_id" in mod_type:
-            mod_info["pio_id"] = mod_type["pio_id"]
         if "repository" in mod_type:
             mod_info["repository"] = mod_type["repository"]
         mod_info["header_file"] = mod_type["header_file"]
@@ -220,6 +218,7 @@ def run(
             real_output_info["mapped_name"] = mapped_name
             mod_outputs[output_name] = real_output_info
         mod_info["outputs"] = mod_outputs
+        mod_info["dependencies"] = mod_type["dependencies"]
 
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
@@ -282,7 +281,6 @@ def run_module(
     ctx, arguments, project_dir, board, **kwargs
 ):
     """ Run a single instance of this module """
-
     # Read the module config
     here = os.path.abspath(project_dir)
     module_json_path = os.path.join(here, "module.json")

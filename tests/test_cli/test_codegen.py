@@ -253,3 +253,49 @@ bool Module::get_output(std_msgs::UInt8MultiArray &msg) {
         res = runner.invoke(run, ["-f", "modules.json", "-p", "csv"])
         assert isinstance(res.exception, RuntimeError), repr(res.exception)
 
+def test_dependencies():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        with open("module.h", "w+") as f:
+            f.write("""
+#ifndef TEST
+#define TEST
+
+#include "Arduino.h"
+#include "DallasTemperature.h"
+#include <openag_module.h>
+
+class MyModule : public Module {
+  public:
+    void begin();
+    void update();
+};
+#endif
+""")
+        with open("module.cpp", "w+") as f:
+            f.write("""
+#include "module.h"
+
+void MyModule::begin() { }
+void MyModule::update() { }
+""")
+        with open("module.json", "w+") as f:
+            json.dump({
+                "header_file": "module.h",
+                "class_name": "MyModule",
+                "description": "My module",
+                "dependencies": [
+                    {
+                        "type": "pio",
+                        "id": 54
+                    },
+                    {
+                        "type": "git",
+                        "url": "https://github.com/OpenAgInitiative/openag_firmware_module.git"
+                    }
+                ]
+            }, f)
+
+        res = runner.invoke(run_module, ["-p", "csv"])
+        assert res.exit_code == 0, repr(res.exception) or res.output

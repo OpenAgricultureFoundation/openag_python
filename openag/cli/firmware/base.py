@@ -229,8 +229,11 @@ class CodeGen(Plugin):
         for plugin in self.plugins:
             deps = deps.union(plugin.pio_dependencies())
         for mod_info in self.modules.values():
-            if "pio_id" in mod_info:
-                deps.add(mod_info["pio_id"])
+            if mod_info.get("repository", {}).get("type", None) == "pio":
+                deps.add(mod_info["repository"]["id"])
+            for mod_dep in mod_info.get("dependencies", []):
+                if mod_dep["type"] == "pio":
+                    deps.add(mod_dep["id"])
         return deps
 
     def all_git_dependencies(self):
@@ -238,10 +241,11 @@ class CodeGen(Plugin):
         for plugin in self.plugins:
             deps = deps.union(plugin.git_dependencies())
         for mod_info in self.modules.values():
-            if "repository" in mod_info:
-                repo = mod_info["repository"]
-                if repo["type"] == "git":
-                    deps.add(repo["url"])
+            if mod_info.get("repository", {}).get("type", None) == "git":
+                deps.add(mod_info["repository"]["url"])
+            for mod_dep in mod_info.get("dependencies", []):
+                if mod_dep["type"] == "git":
+                    deps.add(mod_dep["url"])
         return deps
 
     def write_to(self, f):

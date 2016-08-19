@@ -13,6 +13,10 @@ An :class:`Environment` abstractly represents a single homogenous
 climate-controlled volume within a system. A food computer usually consists of
 a single :class:`Environment`, but larger systems will often contain more than
 one :class:`Environment`.
+
+.. py:attribute:: name
+
+    (str) A human-readable name for the environment
 """
 
 EnvironmentalDataPoint = Schema({
@@ -107,31 +111,43 @@ FirmwareArgument = Schema({
     "description": Any(str, unicode),
     "default": object,
 }, extra=REMOVE_EXTRA)
-CodeRepo = Schema({
+
+PioRepo = Schema({
+    Required("type"): "pio",
+    Required("id"): int
+})
+GitRepo = Schema({
     Required("type"): "git",
     Required("url"): Any(str, unicode)
 })
+
 FirmwareModuleType = Schema({
-    "pio_id": int,
-    "repository": CodeRepo,
+    "repository": Any(PioRepo, GitRepo),
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),
     Required("arguments", default=[]): [FirmwareArgument],
     Required("inputs", default={}): {Extra: FirmwareInput},
     Required("outputs", default={}): {Extra: FirmwareOutput},
+    "dependencies": [Any(PioRepo, GitRepo)]
 }, extra=REMOVE_EXTRA)
 FirmwareModuleType.__doc__ = """
 A :class:`FirmwareModuleType` represents a firmware library for interfacing
 with a particular system peripheral. It is essentially a driver for a sensor or
-actuator. The code itself should be registered with `PlatformIO
-<http://platformio.org>`_ and metadata about it should be stored in the OpenAg
-database. See :ref:`writing-firmware-modules` for information on how to write
-firmware modules.
+actuator. The code can be either stored in a git repository or registered with
+`PlatformIO <http://platformio.org>`_ and metadata about it should be stored in
+the OpenAg database. See :ref:`writing-firmware-modules` for information on how
+to write firmware modules.
 
-.. py:attribute:: pio_id
+.. py:attribute:: repository
 
-    (int) The PlatformIO ID of the uploaded library
+    (dict) A dictionary that describes where the code for this module type is
+    hosted. The dictionary must always have the field "type" which indicates
+    what service hosts the code. For a module hosted by platformio, this
+    dictionary should have a "type" of "pio" and an "id" which is the integer
+    ID of the platformIO library. For a module hosted in a git repository, the
+    dictionary should have a "type" of "git" and a "url" which is the URL of
+    the git repository.
 
 .. py:attribute:: header_file
 
@@ -176,6 +192,12 @@ firmware modules.
     ["sensors", "calibration"] and defaults to ["sensors"]) a "description" (a
     short description of what the output is for), and an "accuracy" (a float
     representing the maximum error of the output values).
+
+.. py:attribute:: dependencies
+
+    (dict) A list of libraries on which this module depends. In particular, it
+    should be a list of dictionaries with the same structure as is required by
+    the "repository" field.
 """
 
 FirmwareModule = Schema({
