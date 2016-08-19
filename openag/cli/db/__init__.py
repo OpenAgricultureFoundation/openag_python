@@ -36,8 +36,15 @@ def init(db_url, api_url):
     server = Server(db_url)
 
     # Configure the CouchDB instance itself
+    config_items = []
     for section, values in db_config.items():
         for param, value in values.items():
+            config_items.append((section, param, value))
+    with click.progressbar(
+        config_items, label="Applying CouchDB configuration",
+        length=len(config_items)
+    ) as _config_items:
+        for section, param, value in _config_items:
             url = urljoin(server.resource.url, "_config", section, param)
             try:
                 current_val = server.resource.session.request(
@@ -61,15 +68,20 @@ def init(db_url, api_url):
                 time.sleep(1)
 
     # Create all dbs on the server
-    for db_name in all_dbs:
-        server.get_or_create(db_name)
+    with click.progressbar(
+        all_dbs, label="Creating databases", length=len(all_dbs)
+    ) as _dbs:
+        for db_name in _dbs:
+            server.get_or_create(db_name)
 
     # Push design documents
+    click.echo("Pushing design documents")
     design_path = os.path.dirname(_design.__file__)
     server.push_design_documents(design_path)
 
     # Set up replication
     if config["cloud_server"]["url"]:
+        click.echo("Setting up replication with cloud server")
         utils.replicate_global_dbs(local_url=db_url)
         if config["cloud_server"]["farm_name"]:
             utils.replicate_per_farm_dbs(local_url=db_url)
@@ -86,6 +98,21 @@ def show():
     click.echo("Using local server at \"{}\"".format(
         config["local_server"]["url"]
     ))
+
+@db.command()
+def clear():
+    """
+    Deletes all of the CouchDB databases for this project from the local
+    server. Useful for debugging proposes.
+    """
+    utils.check_for_local_server()
+    click.confirm(
+        "Are you sure you want to do this? It will delete all of your data",
+        abort=True
+    )
+    server = Server(config["local_server"]["url"])
+    for db_name in all_dbs:
+        del server[db_name]
 
 @db.command()
 @click.argument("fixture_file", type=click.File())
