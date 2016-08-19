@@ -115,9 +115,16 @@ class Plugin:
     def __init__(self, modules):
         self.modules = modules
 
-    def dependencies(self):
+    def pio_dependencies(self):
         """
         Should return a set of the IDs of all of the PlatformIO libraries
+        required by this plugin
+        """
+        return set()
+
+    def git_dependencies(self):
+        """
+        Should return a set of URLs of git repositories containing code
         required by this plugin
         """
         return set()
@@ -217,13 +224,24 @@ class CodeGen(Plugin):
         self.plugins = (self, ) + tuple(plugins)
         self.status_update_interval = status_update_interval
 
-    def all_dependencies(self):
+    def all_pio_dependencies(self):
         deps = set()
         for plugin in self.plugins:
-            deps = deps.union(plugin.dependencies())
+            deps = deps.union(plugin.pio_dependencies())
         for mod_info in self.modules.values():
             if "pio_id" in mod_info:
                 deps.add(mod_info["pio_id"])
+        return deps
+
+    def all_git_dependencies(self):
+        deps = set()
+        for plugin in self.plugins:
+            deps = deps.union(plugin.git_dependencies())
+        for mod_info in self.modules.values():
+            if "repository" in mod_info:
+                repo = mod_info["repository"]
+                if repo["type"] == "git":
+                    deps.add(repo["url"])
         return deps
 
     def write_to(self, f):
@@ -292,7 +310,7 @@ class CodeGen(Plugin):
                 for plugin in self.plugins:
                     plugin.end_read_module_status(f)
 
-    def dependencies(self):
+    def pio_dependencies(self):
         return set([345])
 
     def header_files(self):

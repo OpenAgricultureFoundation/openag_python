@@ -45,6 +45,8 @@ instance.
 
 .. program-output:: openag db load_fixture --help
 
+.. program-output:: openag db deinit --help
+
 .. program-output:: openag db clear --help
 
 Firmware

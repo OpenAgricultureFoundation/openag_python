@@ -107,8 +107,13 @@ FirmwareArgument = Schema({
     "description": Any(str, unicode),
     "default": object,
 }, extra=REMOVE_EXTRA)
+CodeRepo = Schema({
+    Required("type"): "git",
+    Required("url"): Any(str, unicode)
+})
 FirmwareModuleType = Schema({
     "pio_id": int,
+    "repository": CodeRepo,
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),

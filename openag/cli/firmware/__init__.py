@@ -173,6 +173,8 @@ def run(
         mod_type = module_types[mod_info["type"]]
         if "pio_id" in mod_type:
             mod_info["pio_id"] = mod_type["pio_id"]
+        if "repository" in mod_type:
+            mod_info["repository"] = mod_type["repository"]
         mod_info["header_file"] = mod_type["header_file"]
         mod_info["class_name"] = mod_type["class_name"]
         # Update the arguments
@@ -254,8 +256,11 @@ def run(
         modules=modules, plugins=plugins,
         status_update_interval=status_update_interval
     )
-    for dep in codegen.all_dependencies():
+    for dep in codegen.all_pio_dependencies():
         subprocess.call(["platformio", "lib", "install", str(dep)])
+    lib_dir = os.path.join(project_dir, "lib")
+    for dep in codegen.all_git_dependencies():
+        subprocess.call(["git", "clone", dep], cwd=lib_dir)
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
 

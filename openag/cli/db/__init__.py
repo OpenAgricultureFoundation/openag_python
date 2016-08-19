@@ -89,9 +89,17 @@ def init(db_url, api_url):
     config["local_server"]["url"] = db_url
 
 @db.command()
+def deinit():
+    """
+    Detach from the local server.
+    """
+    utils.check_for_local_server()
+    del config["local_server"]
+
+@db.command()
 def show():
     """
-    Shows the URL of the current local server or throws an error if no local
+    Shows the URL of the current local server. Throws an error if no local
     server is selected
     """
     utils.check_for_local_server()
@@ -102,8 +110,7 @@ def show():
 @db.command()
 def clear():
     """
-    Deletes all of the CouchDB databases for this project from the local
-    server. Useful for debugging proposes.
+    Clear all data on the local server. Useful for debugging purposed.
     """
     utils.check_for_local_server()
     click.confirm(
