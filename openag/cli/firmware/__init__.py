@@ -218,7 +218,8 @@ def run(
             real_output_info["mapped_name"] = mapped_name
             mod_outputs[output_name] = real_output_info
         mod_info["outputs"] = mod_outputs
-        mod_info["dependencies"] = mod_type["dependencies"]
+        if "dependencies" in mod_type:
+            mod_info["dependencies"] = mod_type["dependencies"]
 
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
@@ -259,6 +260,10 @@ def run(
         subprocess.call(["platformio", "lib", "install", str(dep)])
     lib_dir = os.path.join(project_dir, "lib")
     for dep in codegen.all_git_dependencies():
+        dep_folder_name = dep.split("/")[-1].split(".")[0]
+        dep_folder = os.path.join(lib_dir, dep_folder_name)
+        if os.path.isdir(dep_folder):
+            subprocess.call(["git", "pull"], cwd=dep_folder)
         subprocess.call(["git", "clone", dep], cwd=lib_dir)
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
