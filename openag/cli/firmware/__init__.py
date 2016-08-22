@@ -10,6 +10,7 @@ from base import CodeGen
 from plugins import plugin_map
 from ..config import config
 from openag.couch import Server
+from openag.utils import synthesize_firmware_module_info
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
 
@@ -133,24 +134,8 @@ def run(
                 )
                 module_types[dir_name] = FirmwareModuleType(json.load(f))
 
-    # Update the module types using the categories
-    for mod_name, mod_info in module_types.items():
-        for output_name, output_info in mod_info["outputs"].items():
-            for c in output_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["outputs"][output_name]
-        for input_name, input_info in mod_info["inputs"].items():
-            for c in input_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["inputs"][input_name]
-
     # Get the list of modules
     modules = {}
-    # Read from the local couchdb server
     if modules_file:
         _modules = json.load(modules_file)
         for _id, info in _modules.items():
@@ -168,58 +153,23 @@ def run(
     else:
         raise click.ClickException("No modules specified for the project")
 
-    # Populate the modules with data from their types
-    for mod_id, mod_info in modules.items():
-        mod_type = module_types[mod_info["type"]]
-        if "repository" in mod_type:
-            mod_info["repository"] = mod_type["repository"]
-        mod_info["header_file"] = mod_type["header_file"]
-        mod_info["class_name"] = mod_type["class_name"]
-        # Update the arguments
-        args = list(mod_info.get("arguments", []))
-        if len(args) > len(mod_type["arguments"]):
-            raise click.ClickException(
-                'Too many arguments specified for module "{}". (Got {}, '
-                'expected {})'.format(
-                    mod_id, len(args), len(mod_type["arguments"])
-                )
-            )
-        for i in range(len(args), len(mod_type["arguments"])):
-            arg_info = mod_type["arguments"][i]
-            if "default" in arg_info:
-                args.append(arg_info["default"])
+    # Synthesize the module and module type dicts
+    modules = synthesize_firmware_module_info(modules, module_types)
+
+    # Update the module inputs and outputs using the categories
+    for mod_name, mod_info in modules.items():
+        for input_name, input_info in mod_info["inputs"].items():
+            for c in input_info["categories"]:
+                if c in categories:
+                    break
             else:
-                raise click.ClickException(
-                    'Not enough module arguments supplied for module "{}" '
-                    '(Got {}, expecting {})'.format(
-                        mod_id, len(args), len(mod_type["arguments"])
-                    )
-                )
-        mod_info["arguments"] = args
-        # Apply mappings to inputs and outputs
-        mappings = mod_info.get("mappings", {})
-        mod_inputs = {}
-        for input_name, input_info in mod_type["inputs"].items():
-            if input_name in mappings:
-                mapped_name = mappings[input_name]
+                del mod_info["inputs"][input_name]
+        for output_name, output_info in mod_info["outputs"].items():
+            for c in output_info["categories"]:
+                if c in categories:
+                    break
             else:
-                mapped_name = input_name
-            real_input_info = dict(input_info)
-            real_input_info["mapped_name"] = mapped_name
-            mod_inputs[input_name] = real_input_info
-        mod_info["inputs"] = mod_inputs
-        mod_outputs = {}
-        for output_name, output_info in mod_type["outputs"].items():
-            if output_name in mappings:
-                mapped_name = mappings[output_name]
-            else:
-                mapped_name = output_name
-            real_output_info = dict(output_info)
-            real_output_info["mapped_name"] = mapped_name
-            mod_outputs[output_name] = real_output_info
-        mod_info["outputs"] = mod_outputs
-        if "dependencies" in mod_type:
-            mod_info["dependencies"] = mod_type["dependencies"]
+                del mod_info["outputs"][output_name]
 
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")

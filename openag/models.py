@@ -40,8 +40,7 @@ recipe.
 
     (str, required) The type of measurement of event this represents (e.g.
     "air_temperature"). The class
-    :class:`~openag.var_types.EnvironmentalVariable` contains all valid
-    variable names.
+    :class:`~openag.var_types.EnvVar` contains all valid variable names.
 
 .. py:attribute:: is_manual
 
@@ -82,6 +81,14 @@ write recipes in the new format, and then use the rest of the existing system
 as is. See :ref:`writing-recipes` for information on existing recipe formats
 and how to write recipes with them.
 
+.. py:attribute:: name
+
+    (str) A human-readable name for the recipe
+
+.. py:attribute:: description
+
+    (str) A description of the recipe and what it should be used for
+
 .. py:attribute:: format
 
     (str, required) The format of the recipe
@@ -94,23 +101,126 @@ and how to write recipes with them.
 
 
 FirmwareInput = Schema({
-    Required("type"): Any(str, unicode),
-    Required("categories", default=["actuators"]): ["actuators", "calibration"],
+    "type": Any(str, unicode),
+    "variable": Any(str, unicode),
+    "categories": ["actuators", "calibration"],
     "description": Any(str, unicode),
+    "direction": Any(1, -1),
+    "threshold": float
 })
+FirmwareInput.__doc__ = """
+A :class:`~openag.models.FirmwareInput` gives information about a single input
+to a firmware module (a ROS topic to which the module subscribes). These
+objects are only ever stored in the `input` attribute of a
+:class:`~openag.models.FirmwareModuleType` or
+:class:`~openag.models.FirmwareModule`.
+
+.. py:attribute:: type
+
+    (str) The name of the ROS message type expected for messages on the topic
+
+.. py:attribute:: variable
+
+    (str) The name of the environmental variable affected by this input. For
+    example, for a heater, this should be "air_temperature". Defaults to the
+    key for this object in the parent dictionary.
+
+.. py:attribute:: categories
+
+    (list) A list of categories to which this inputs belongs. Must be a subset
+    of ["actuators", "calibration"] and defaults to ["actuators"]
+
+.. py:attribute:: description
+
+    (str) A short description of what the input is for
+
+.. py:attribute:: direction
+
+    (int) Must be either 1, or -1. Indicates the sign of the effect this
+    input has on the relevant variable. For example, for an input which
+    represents the command to send to a heater module, the input should be
+    named "air_temperature" to indicate that it affects air temperature and the
+    "direction" should be 1 to indicate that sending a positive value increases
+    the air temperature in the system. A chiller module would have an input
+    named "air_temperature" with a "direction" of -1 to indicate that sending a
+    positive value to it decreases air temperature.
+
+.. py:attribute:: threshold
+
+    (float) Only used for boolean inputs. If this is an actuator input and the
+    control loop for this actuator outputs a float, only values of the control
+    effort that exceed this threshold will be converted to True values for the
+    actual input.
+"""
+
 FirmwareOutput = Schema({
-    Required("type"): Any(str, unicode),
-    Required("categories", default=["sensors"]): ["sensors", "calibration"],
+    "type": Any(str, unicode),
+    "variable": Any(str, unicode),
+    "categories": ["sensors", "calibration"],
     "description": Any(str, unicode),
     "accuracy": float,
 })
+FirmwareOutput.__doc__ = """
+A :class:`~openag.models.FirmwareOutput` gives information about a single
+outputs from a firmware module (a ROS topic to which the module publishes).
+These objects are only ever stored in the `output` attribute of a
+:class:`~openag.models.FirmwareModuleType` or
+:class:`~openag.models.FirmwareModule`.
+
+.. py:attribute:: type
+
+    (str) The name of the ROS message type expected for messages on the topic
+
+.. py:attribute:: variable
+
+    (str) The name of the environmental variable represented by this output.
+    Defaults to the key for this object in the parent dictionary.
+
+.. py:attribute:: categories
+
+    (list) A list of categories to which this output belongs. Must be a subset
+    of ["sensors", "calibration"] and defaults to ["sensors"]
+
+.. py:attribute:: description
+
+    (str) A short description of what the output is for
+
+.. py:attribute:: accuracy
+
+    (float) The maximum error for measurements on this output. Used to decide
+    how to round the values before they are presented to the user.
+"""
 
 FirmwareArgument = Schema({
-    Required("name"): Any(str, unicode),
-    "type": Any("int", "float", "bool", "str"),
+    "name": Any(str, unicode),
+    Required("type"): Any("int", "float", "bool", "str"),
     "description": Any(str, unicode),
     "default": object,
-}, extra=REMOVE_EXTRA)
+})
+FirmwareArgument.__doc__ = """
+A :class:`~openag.models.FirmwareArgument` gives information about a single
+argument to a firmware module (an argument to the constructor for the Arduino
+class for the module). These objects are only ever stored in the `arguments`
+attribute of a :class:`~openag.models.FirmwareModuleType` or
+:class:`~openag.models.FirmwareModule`.
+
+.. py:attribute:: name
+
+    (str) The name of the argument
+
+.. py:attribute:: type
+
+    (str, required) Must be one of "int", "float", "bool", and "str"
+
+.. py:attribute:: description
+
+    (str) A short description of what the argument is for
+
+.. py:attribute:: default
+
+    The value that should be used for the argument if the user doesn't specify
+    one.
+"""
 
 PioRepo = Schema({
     Required("type"): "pio",
@@ -126,18 +236,18 @@ FirmwareModuleType = Schema({
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),
-    Required("arguments", default=[]): [FirmwareArgument],
-    Required("inputs", default={}): {Extra: FirmwareInput},
-    Required("outputs", default={}): {Extra: FirmwareOutput},
+    "arguments": [FirmwareArgument],
+    "inputs": {Extra: FirmwareInput},
+    "outputs": {Extra: FirmwareOutput},
     "dependencies": [Any(PioRepo, GitRepo)]
 }, extra=REMOVE_EXTRA)
 FirmwareModuleType.__doc__ = """
-A :class:`FirmwareModuleType` represents a firmware library for interfacing
-with a particular system peripheral. It is essentially a driver for a sensor or
-actuator. The code can be either stored in a git repository or registered with
-`PlatformIO <http://platformio.org>`_ and metadata about it should be stored in
-the OpenAg database. See :ref:`writing-firmware-modules` for information on how
-to write firmware modules.
+A :class:`~openag.models.FirmwareModuleType` represents a firmware library for
+interfacing with a particular system peripheral. It is essentially a driver for
+a sensor or actuator. The code can be either stored in a git repository or
+registered with `PlatformIO <http://platformio.org>`_ and metadata about it
+should be stored in the OpenAg database. See :ref:`writing-firmware-modules`
+for information on how to write firmware modules.
 
 .. py:attribute:: repository
 
@@ -164,34 +274,22 @@ to write firmware modules.
 
 .. py:attribute:: arguments
 
-    (list) An array of dictionaries describing the arguments to be
-    passed to the constructor of the top-level class of this module. The
-    dictionaries must contain the fields "name" (the name of the argument) and
-    "type" (one of "int", "float", "bool", and "str") and can contain the
-    fields "description" (a short description of what the argument is for) and
-    "default" (a default value for the argument in case no value is supplied).
-    All arguments with a default value should be at the end of the list.
+    (list) A list of :class:`~openag.models.FirmwareArgument` objects
+    representing the arguments to be passed to the constructor of the top-level
+    class of this module. All arguments with a default value should be at the
+    end of the list.
 
 .. py:attribute:: inputs
 
-    (dict) A nested dictionary mapping names of topics to which this library
-    subscribes to dictionaries containing information about those topics. The
-    inner dictionaries must contain the field "type" (the ROS message type
-    expected for messages on the topic) and can contain the fields "categories"
-    (a list of categories to which this input belongs. Must be a subset of
-    ["actuators", "calibration"] and defaults to ["actuators"]) and
-    "description" (a short description of what the input is for).
+    (dict) A nested dictionary mapping names of topics to which modules of this
+    type subscribe to :class:`~openag.models.FirmwareInput` objects describing
+    those inputs.
 
 .. py:attribute:: outputs
 
-    (dict) A nested dictionary mapping names of topics to which this library
-    publishes to dictionaries containing information about those topics. The
-    inner dictionary must contain the field "type" (the ROS message type
-    expected for messages on the topic) and can contain the fields "categories"
-    (a list of categories to which this output belongs. Must be a subset of
-    ["sensors", "calibration"] and defaults to ["sensors"]) a "description" (a
-    short description of what the output is for), and an "accuracy" (a float
-    representing the maximum error of the output values).
+    (dict) A nested dictionary mapping names of topics to which modules of this
+    type publish to :class:`~openag.models.FirmwareOutput` objects describing
+    those outputs.
 
 .. py:attribute:: dependencies
 
@@ -204,10 +302,11 @@ FirmwareModule = Schema({
     Required("type"): Any(str, unicode),
     "environment": Any(str, unicode),
     "arguments": [object],
-    "mappings": dict,
+    "inputs": {Extra: FirmwareInput},
+    "outputs": {Extra: FirmwareOutput}
 }, extra=REMOVE_EXTRA)
 FirmwareModule.__doc__ = """
-A :class:`FirmwareModule` is a single instance of a
+A :class:`~openag.models.FirmwareModule` is a single instance of a
 :class:`~openag.models.FirmwareModuleType` usually configured to control a
 single physical sensor or actuator.
 
@@ -228,13 +327,23 @@ single physical sensor or actuator.
     :class:`~openag.models.FirmwareModuleType` for this module that don't have
     a default value.
 
-.. py:attribute:: mappings
+.. py:attribute:: inputs
 
-    (dict) A dictionary mapping input/output names to different input/output
-    names. Keys are the names defined in the firmware module type and values
-    are the names that should be used instead. This can be used, for example,
-    to route the correct input into an actuator module with a generic input
-    name such as `state`.
+    (dict) A nested dictionary mapping names of topics to which this module
+    subscribes to :class:`FirmwareInput` objects describing those inputs. The
+    set of keys in this dictionary must be a subset of the keys in the `inputs`
+    dictionary for the :class:`~openag.models.FirmwareModuleType` for this
+    module. Values in this dictionary override values in the firmware module
+    type.
+
+.. py:attribute:: outputs
+
+    (dict) A nested dictionary mapping names of topics to which this module
+    publishes to :class:`FirmwareOutput` objects describing those outputs. The
+    set of keys in this dictionary must be a subset of the keys in the
+    `outputs` dictionary for the :class:`~openag.models.FirmwareModuleType` for
+    this module. Values in this dictionary override values in the firmware
+    module type.
 """
 
 SoftwareInput = Schema({
