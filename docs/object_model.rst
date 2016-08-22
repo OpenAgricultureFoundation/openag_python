@@ -10,6 +10,15 @@ Object Model
 .. autodata:: openag.models.Recipe
    :annotation:
 
+.. autodata:: openag.models.FirmwareInput
+   :annotation:
+
+.. autodata:: openag.models.FirmwareOutput
+   :annotation:
+
+.. autodata:: openag.models.FirmwareArgument
+   :annotation:
+
 .. autodata:: openag.models.FirmwareModuleType
    :annotation:
 
