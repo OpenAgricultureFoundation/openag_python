@@ -60,7 +60,7 @@ class CSVCommPlugin(Plugin):
         # "data" that can be directly printed with Serial.print
         msg_type = self.modules[mod_name]["outputs"][output_name]["type"]
         if msg_type not in [
-            "std_msgs/Bool", "std_msgs/Float32"
+            "std_msgs/Bool", "std_msgs/Float32", "std_msgs/Int32"
         ]:
             raise RuntimeError(
                 "CSV plugin doesn't support outputs of type " + msg_type
