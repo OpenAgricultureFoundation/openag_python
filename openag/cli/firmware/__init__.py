@@ -213,8 +213,11 @@ def run(
         dep_folder_name = dep.split("/")[-1].split(".")[0]
         dep_folder = os.path.join(lib_dir, dep_folder_name)
         if os.path.isdir(dep_folder):
+            click.echo('Updating "{}"'.format(dep_folder_name))
             subprocess.call(["git", "pull"], cwd=dep_folder)
-        subprocess.call(["git", "clone", dep], cwd=lib_dir)
+        else:
+            click.echo('Downloading "{}"'.format(dep_folder_name))
+            subprocess.call(["git", "clone", dep], cwd=lib_dir)
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
 
