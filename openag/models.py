@@ -105,8 +105,8 @@ FirmwareInput = Schema({
     "variable": Any(str, unicode),
     "categories": ["actuators", "calibration"],
     "description": Any(str, unicode),
-    "direction": Any(1, -1),
-    "threshold": float
+    "multiplier": float,
+    "deadband": float
 })
 FirmwareInput.__doc__ = """
 A :class:`~openag.models.FirmwareInput` gives information about a single input
@@ -134,23 +134,27 @@ objects are only ever stored in the `input` attribute of a
 
     (str) A short description of what the input is for
 
-.. py:attribute:: direction
+.. py:attribute:: multipler
 
-    (int) Must be either 1, or -1. Indicates the sign of the effect this
-    input has on the relevant variable. For example, for an input which
-    represents the command to send to a heater module, the input should be
-    named "air_temperature" to indicate that it affects air temperature and the
-    "direction" should be 1 to indicate that sending a positive value increases
-    the air temperature in the system. A chiller module would have an input
-    named "air_temperature" with a "direction" of -1 to indicate that sending a
-    positive value to it decreases air temperature.
+    (float) A factor by which to multiply data points on this input before they
+    reach the module itself. This should generally be used to specify the
+    extent to which the module affects the variable. For example, for an input
+    which represents the command to send to a chiller module, the input should
+    have the variable "air_temperature" and should have a negative multiplier
+    so that a negative output from the air temperature control loop turns the
+    chiller on. Fractional multipliers are allowed and can be useful to
+    balance things from the perspective of the control loop when an up actuator
+    (e.g. heater) is more powerful than its corresponding down actuator (e.g.
+    chiller) or vice versa. Defaults to 1.
 
-.. py:attribute:: threshold
+.. py:attribute:: deadband
 
-    (float) Only used for boolean inputs. If this is an actuator input and the
-    control loop for this actuator outputs a float, only values of the control
-    effort that exceed this threshold will be converted to True values for the
-    actual input.
+    (float) Data points sent to this input with an absolute value less than the
+    deadband will be sent as zeros instead. This is expecially useful for
+    boolean inputs. For example, if a control loop outputs a float that is
+    being fed into a binary actuator, a deadband can be put on the input to the
+    actuator to effectively set a threshold on the commanded control effect
+    above which the acuator will turn on.
 """
 
 FirmwareOutput = Schema({
