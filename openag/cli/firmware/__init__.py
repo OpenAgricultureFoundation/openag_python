@@ -152,6 +152,28 @@ def run(
             modules[_id] = FirmwareModule(db[_id])
     else:
         raise click.ClickException("No modules specified for the project")
+    # Rename any modules whose ids would break the codegen
+    cpp_keywords = [
+        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
+        "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
+        "break", "case", "catch", "char", "char16_t", "char32_t", "class",
+        "compl", "concept", "const", "constexpr", "const_cast", "continue",
+        "decltype", "default", "delete", "do", "double", "dynamic_cast",
+        "else", "enum", "explicit", "export", "extern", "false", "float",
+        "for", "friend", "goto", "if", "inline", "int", "long", "mutable",
+        "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator",
+        "or", "or_eq", "private", "protected", "public", "register",
+        "reinterpret_cast", "requires", "return short", "signed", "sizeof",
+        "static", "static_assert", "static_cast", "struct", "switch",
+        "synchronized", "template", "this", "thread_local", "throw", "true",
+        "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
+    ]
+    invalid_ids = [_id for _id in modules.keys() if _id in cpp_keywords]
+    for _id in invalid_ids:
+        new_id = "_" + _id
+        modules[new_id] = modules[_id]
+        del modules[_id]
 
     # Synthesize the module and module type dicts
     modules = synthesize_firmware_module_info(modules, module_types)

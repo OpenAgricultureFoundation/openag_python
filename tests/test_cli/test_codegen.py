@@ -299,3 +299,30 @@ void MyModule::update() { }
 
         res = runner.invoke(run_module, ["-p", "csv"])
         assert res.exit_code == 0, repr(res.exception) or res.output
+
+def test_run_cpp_keyword_as_module_id():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        res = runner.invoke(init)
+        assert res.exit_code == 0, repr(res.exception) or res.output
+
+        here = os.getcwd()
+        lib_folder = os.path.join(here, "lib")
+        module_folder = os.path.join(lib_folder, "module")
+        os.mkdir(module_folder)
+        with open(os.path.join(module_folder, "module.h"), "w+") as f:
+            f.write(EXAMPLE_HEADER)
+        with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
+            f.write(EXAMPLE_SOURCE)
+        with open(os.path.join(module_folder, "module.json"), "w+") as f:
+            f.write(EXAMPLE_JSON)
+        with open(os.path.join(here, "modules.json"), "w+") as f:
+            json.dump({
+                "for": {
+                    "type": "module"
+                }
+            }, f)
+
+        res = runner.invoke(run, ["-f", "modules.json"])
+        assert res.exit_code == 0, repr(res.exception) or res.output
