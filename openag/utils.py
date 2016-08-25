@@ -1,3 +1,5 @@
+from openag.categories import SENSORS, ACTUATORS
+
 __all__ = ["synthesize_firmware_module_info"]
 
 def synthesize_firmware_module_info(modules, module_types):
@@ -54,7 +56,7 @@ def synthesize_firmware_module_info(modules, module_types):
                 "variable", input_name
             )
             mod_input_info["categories"] = mod_input_info.get(
-                "categories", ["actuators"]
+                "categories", [ACTUATORS]
             )
             mod_inputs[input_name] = mod_input_info
         mod_info["inputs"] = mod_inputs
@@ -67,7 +69,7 @@ def synthesize_firmware_module_info(modules, module_types):
                 "variable", output_name
             )
             mod_output_info["categories"] = mod_output_info.get(
-                "categories", ["sensors"]
+                "categories", [SENSORS]
             )
             mod_outputs[output_name] = mod_output_info
         mod_info["outputs"] = mod_outputs

@@ -5,6 +5,7 @@ import click
 import subprocess
 from importlib import import_module
 from voluptuous import Invalid
+from ConfigParser import ConfigParser
 
 from base import CodeGen
 from plugins import plugin_map
@@ -13,6 +14,9 @@ from openag.couch import Server
 from openag.utils import synthesize_firmware_module_info
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
+from openag.categories import all_categories, SENSORS, ACTUATORS, CALIBRATION
+
+PLATFORMIO_CONFIG = "platformio.ini"
 
 def board_option(f):
     f = click.option(
@@ -31,8 +35,8 @@ def project_dir_option(f):
 
 def codegen_options(f):
     f = click.option(
-        "-c", "--categories", multiple=True, default=["sensors", "actuators"],
-        type=click.Choice(["sensors", "actuators", "calibration"]),
+        "-c", "--categories", multiple=True, default=[SENSORS, ACTUATORS],
+        type=click.Choice([SENSORS, ACTUATORS, CALIBRATION]),
         help="A list of the categories of inputs and outputs that should "
         "be enabled"
     )(f)
@@ -65,20 +69,44 @@ def init(board, project_dir, **kwargs):
     project_dir = os.path.abspath(project_dir)
 
     # Initialize the platformio project
-    click.echo("Initializing PlatformIO project")
-    with open("/dev/null", "wb") as null:
-        try:
-            init = subprocess.Popen(
-                ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
-                stdout=null, cwd=project_dir
+    pio_config_path = os.path.join(project_dir, "platformio.ini")
+    if not os.path.isfile(pio_config_path):
+        click.echo("Initializing PlatformIO project")
+        with open("/dev/null", "wb") as null:
+            try:
+                init = subprocess.Popen(
+                    ["platformio", "init", "-b", board], stdin=subprocess.PIPE,
+                    stdout=null, cwd=project_dir
+                )
+                init.communicate("y\n")
+            except OSError as e:
+                raise RuntimeError("PlatformIO is not installed")
+        if init.returncode != 0:
+            raise RuntimeError(
+                "Failed to initialize PlatformIO project"
             )
-            init.communicate("y\n")
-        except OSError as e:
-            raise RuntimeError("PlatformIO is not installed")
-    if init.returncode != 0:
-        raise RuntimeError(
-            "Failed to initialize PlatformIO project"
-        )
+
+    # Add a platformio environment for each category if it doesn't exist
+    # already
+    # pio_config = ConfigParser()
+    # pio_config.read(pio_config_path)
+    # if not pio_config.has_section("platformio"):
+    #     pio_config.add_section("platformio")
+    # pio_config.set(
+    #     "platformio", "env_default", ", ".join([SENSORS, ACTUATORS])
+    # )
+    # for c in all_categories:
+    #     section_name = "env:{}".format(c)
+    #     if not pio_config.has_section(section_name):
+    #         pio_config.add_section(section_name)
+    #     pio_config.set(
+    #         section_name, "build_flags",
+    #         "-D OPENAG_CATEGORY_{}".format(c.upper())
+    #     )
+    #     pio_config.set(section_name, "platform", "atmelavr")
+    #     pio_config.set(section_name, "frameworks", "*")
+    # with open(pio_config_path, "w") as f:
+    #     pio_config.write(f)
 
     # Create an empty modules.json file
     modules_path = os.path.join(project_dir, "modules.json")
@@ -248,7 +276,12 @@ def run(
     if target:
         command.append("-t")
         command.append(target)
-    if subprocess.call(command, cwd=project_dir):
+    env = os.environ.copy()
+    build_flags = []
+    for c in categories:
+        build_flags.append("-DOPENAG_CATEGORY_{}".format(c.upper()))
+    env["PLATFORMIO_BUILD_FLAGS"] = " ".join(build_flags)
+    if subprocess.call(command, cwd=project_dir, env=env):
         raise click.ClickException("Compilation failed")
 
 @firmware.command()

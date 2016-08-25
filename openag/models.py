@@ -3,6 +3,7 @@ __all__ = [
     "FirmwareModuleType", "Recipe", "SoftwareModule", "SoftwareModuleType"
 ]
 
+from .categories import SENSORS, ACTUATORS, CALIBRATION
 from voluptuous import Schema, Required, Any, Extra, REMOVE_EXTRA
 
 Environment = Schema({
@@ -103,7 +104,7 @@ and how to write recipes with them.
 FirmwareInput = Schema({
     "type": Any(str, unicode),
     "variable": Any(str, unicode),
-    "categories": ["actuators", "calibration"],
+    "categories": [ACTUATORS, CALIBRATION],
     "description": Any(str, unicode),
     "multiplier": float,
     "deadband": float
@@ -160,7 +161,7 @@ objects are only ever stored in the `input` attribute of a
 FirmwareOutput = Schema({
     "type": Any(str, unicode),
     "variable": Any(str, unicode),
-    "categories": ["sensors", "calibration"],
+    "categories": [SENSORS, CALIBRATION],
     "description": Any(str, unicode),
     "accuracy": float,
 })

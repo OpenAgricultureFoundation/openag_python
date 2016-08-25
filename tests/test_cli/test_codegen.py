@@ -325,4 +325,57 @@ def test_run_cpp_keyword_as_module_id():
             }, f)
 
         res = runner.invoke(run, ["-f", "modules.json"])
-        assert res.exit_code == 0, repr(res.exception) or res.output
+        assert res.exit_code == 0, repr(res.exception)
+
+def test_preprocessor_flags():
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        res = runner.invoke(init)
+        assert res.exit_code == 0, repr(res.exception)
+
+        here = os.getcwd()
+        with open("module.h", "w+") as f:
+            f.write("""
+#ifndef TEST
+#define TEST
+
+#include <openag_module.h>
+
+class MyModule : public Module {
+  public:
+    void begin();
+    void update();
+};
+
+#endif
+""")
+        with open("module.cpp", "w+") as f:
+            f.write("""
+#include "module.h"
+
+void MyModule::begin() { }
+
+void MyModule::update() {
+  #ifdef OPENAG_CATEGORY_CALIBRATION
+  PlatformIO should complain about this line
+  #endif
+}
+""")
+        with open("module.json", "w+") as f:
+            json.dump({
+                "class_name": "MyModule",
+                "header_file": "module.h",
+                "dependencies": [
+                    {
+                        "type": "git",
+                        "url": "https://github.com/OpenAgInitiative/openag_firmware_module.git"
+                    }
+                ]
+            }, f)
+
+        res = runner.invoke(run_module)
+        assert res.exit_code == 0, repr(res.exception)
+
+        res = runner.invoke(run_module, ["-c", "calibration"])
+        assert res.exit_code != 0, res.output
