@@ -11,7 +11,7 @@ with open(readme_path) as f:
 
 setup(
     name='openag',
-    version='0.1.3',
+    version='0.1.4',
     author='Open Agriculture Initiative',
     description='Core Python package for the OpenAg software stack',
     long_description=readme,
