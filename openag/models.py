@@ -164,6 +164,7 @@ FirmwareOutput = Schema({
     "categories": [SENSORS, CALIBRATION],
     "description": Any(str, unicode),
     "accuracy": float,
+    "repeatability": float,
 })
 FirmwareOutput.__doc__ = """
 A :class:`~openag.models.FirmwareOutput` gives information about a single
@@ -194,6 +195,13 @@ These objects are only ever stored in the `output` attribute of a
 
     (float) The maximum error for measurements on this output. Used to decide
     how to round the values before they are presented to the user.
+
+.. py:attribute:: repeatability
+
+    (float) A value below which the absolute difference between two repeated
+    readings on this output should be expected to lie with a probability of 95%
+    assuming that the underlying environmental condition is constant between
+    readings.
 """
 
 FirmwareArgument = Schema({

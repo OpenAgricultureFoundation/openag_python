@@ -119,7 +119,7 @@ def test_run_module():
 
         # Run with both plugins -- Should work
         res = runner.invoke(
-            run_module, ["-p", "ros", "-p", "csv", "-f", "modules.json"]
+            run_module, ["-p", "ros", "-p", "csv"]
         )
         assert res.exit_code == 0, repr(res.exception) or res.output
 
