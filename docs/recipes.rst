@@ -22,6 +22,9 @@ Where `<offset>` is the number of seconds since the start of the recipe at
 which this set point should take effect, `<variable_type>` is the variable type
 to which the set point refers (e.g. "air_temperature"), and `<value>` is the
 value of the set point. The set point stays in effect until a new set point for
-that variable type is reached.
+that variable type is reached. The list of set points must be ordered by
+offset.
 
-The list of set points must be ordered by offset.
+See `this gist
+<https://gist.github.com/LeonChambers/11a76af7867acb682a849b414a97c483.html>`_
+for an example of a recipe.

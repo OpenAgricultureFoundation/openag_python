@@ -12,6 +12,11 @@ the software is built. It defines the object model for the database, the
 structure of Arduino modules, and a command line interface for interacting
 setting up and interacting with a system.
 
+There is also ROS package `openag_brain
+<https://github.com/OpenAgInitiative/openag_brain.git>`_ which runs on the food
+computer. It is built on top of this library and provides things like control
+loops, data persistence, and taking images from a USB camera.
+
 .. toctree::
    :maxdepth: 2
 

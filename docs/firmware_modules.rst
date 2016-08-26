@@ -68,6 +68,6 @@ calibration with only the "calibration" inputs and outputs.
 Examples
 --------
 
-The `Binary Actuator module
-<https://github.com/OpenAgInitiative/openag_binary_actuator>`_ is an example of
-a minimal firmware module and can be used for reference in writing your own.
+The repository `openag_firmware_examples
+<https://github.com/OpenAgInitiative/openag_firmware_examples>`_ provides some
+examples of well-documented, simple firmware modules for reference.
