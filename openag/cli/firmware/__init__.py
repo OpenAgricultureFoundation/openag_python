@@ -197,7 +197,10 @@ def run(
         "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
         "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
     ]
-    invalid_ids = [_id for _id in modules.keys() if _id in cpp_keywords]
+    invalid_ids = [
+        _id for _id in modules.keys() if _id in cpp_keywords or
+        _id[0].isdigit()
+    ]
     for _id in invalid_ids:
         new_id = "_" + _id
         modules[new_id] = modules[_id]

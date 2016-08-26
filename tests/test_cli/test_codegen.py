@@ -300,7 +300,7 @@ void MyModule::update() { }
         res = runner.invoke(run_module, ["-p", "csv"])
         assert res.exit_code == 0, repr(res.exception) or res.output
 
-def test_run_cpp_keyword_as_module_id():
+def test_run_invalid_module_ids():
     runner = CliRunner()
 
     with runner.isolated_filesystem():
@@ -320,6 +320,9 @@ def test_run_cpp_keyword_as_module_id():
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
                 "for": {
+                    "type": "module"
+                },
+                "123": {
                     "type": "module"
                 }
             }, f)
