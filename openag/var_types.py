@@ -1,13 +1,13 @@
 __all__ = ["EnvVars"]
 
 class EnvVar:
-    items = set()
+    items = {}
 
     def __init__(self, name, description, units=None):
         self.name = name
         self.__doc__ = description
         self.units = units
-        self.items.add(self)
+        self.items[self.name] = self
 
     def __str__(self):
         return self.name
