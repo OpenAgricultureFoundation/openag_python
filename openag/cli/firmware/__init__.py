@@ -85,33 +85,6 @@ def init(board, project_dir, **kwargs):
             raise RuntimeError(
                 "Failed to initialize PlatformIO project"
             )
-
-    # Add a platformio environment for each category if it doesn't exist
-    # already
-    # pio_config = ConfigParser()
-    # pio_config.read(pio_config_path)
-    # if not pio_config.has_section("platformio"):
-    #     pio_config.add_section("platformio")
-    # pio_config.set(
-    #     "platformio", "env_default", ", ".join([SENSORS, ACTUATORS])
-    # )
-    # for c in all_categories:
-    #     section_name = "env:{}".format(c)
-    #     if not pio_config.has_section(section_name):
-    #         pio_config.add_section(section_name)
-    #     pio_config.set(
-    #         section_name, "build_flags",
-    #         "-D OPENAG_CATEGORY_{}".format(c.upper())
-    #     )
-    #     pio_config.set(section_name, "platform", "atmelavr")
-    #     pio_config.set(section_name, "frameworks", "*")
-    # with open(pio_config_path, "w") as f:
-    #     pio_config.write(f)
-
-    # Create an empty modules.json file
-    modules_path = os.path.join(project_dir, "modules.json")
-    with open(modules_path, "w+") as f:
-        json.dump({}, f)
     click.echo("OpenAg firmware project initialized!")
 
 @firmware.command()
