@@ -269,7 +269,15 @@ def run(
 def run_module(
     ctx, arguments, project_dir, board, **kwargs
 ):
-    """ Run a single instance of this module """
+    """
+    Run a single instance of this module. [ARGUMENTS] specify the signal
+    pin numbers used on the Arduino for this module (required).
+
+    Example:
+
+    \b
+    openag firmware run_module -t upload 4
+    """
     # Read the module config
     here = os.path.abspath(project_dir)
     module_json_path = os.path.join(here, "module.json")
