@@ -53,3 +53,7 @@ FRONTAL_IMAGE = EnvVar(
     "frontal_image", "Image from in front of the tray looking towards the "
     "plants", "png"
 )
+LIGHT_ILLUMINANCE = EnvVar(
+    "light_illuminance", "The intensity of light falling at the plants",
+    "lux"
+)
