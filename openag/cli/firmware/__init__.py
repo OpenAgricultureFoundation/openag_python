@@ -270,8 +270,9 @@ def run_module(
     ctx, arguments, project_dir, board, **kwargs
 ):
     """
-    Run a single instance of this module. [ARGUMENTS] specify the signal
-    pin numbers used on the Arduino for this module (required).
+    Run a single instance of this module. [ARGUMENTS] specifies a list of
+    implementation-specific arguments to the module (for example, configuring
+    Arduino pin numbers for the module).
 
     Example:
 
