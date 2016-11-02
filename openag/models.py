@@ -106,8 +106,8 @@ FirmwareInput = Schema({
     "variable": Any(str, unicode),
     "categories": [ACTUATORS, CALIBRATION],
     "description": Any(str, unicode),
-    "multiplier": float,
-    "deadband": float
+    "multiplier": Any(float, int),
+    "deadband": Any(float, int)
 })
 FirmwareInput.__doc__ = """
 A :class:`~openag.models.FirmwareInput` gives information about a single input
