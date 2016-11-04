@@ -278,6 +278,12 @@ def run_module(
 
     \b
     openag firmware run_module -t upload 4
+
+    This command fetches module definitions from CouchDB. CouchDB must be
+    running on port 5984 and the firmware_module_type database populated with
+    appropriate type records for this command to work. Loading the default
+    fixture from openag_brain will populate a default set of
+    firmware_module_type records.
     """
     # Read the module config
     here = os.path.abspath(project_dir)
