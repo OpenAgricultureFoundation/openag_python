@@ -157,51 +157,14 @@ def run(
     modules = remap_unsafe_module_ids(modules)
     # Synthesize the module and module type dicts
     modules = synthesize_firmware_module_info(modules, module_types)
-
     # Update the module inputs and outputs using the categories
-    for mod_name, mod_info in modules.items():
-        for input_name, input_info in mod_info["inputs"].items():
-            for c in input_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["inputs"][input_name]
-        for output_name, output_info in mod_info["outputs"].items():
-            for c in output_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["outputs"][output_name]
+    modules = prune_unspecified_categories(modules, categories)
 
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
     # Create the plugins
-    plugins = []
-    for plugin_name in plugin:
-        plugin_cls = plugin_map.get(plugin_name, None)
-        if not plugin_cls:
-            try:
-                plugin_module_name, plugin_cls_name = plugin_name.split(":")
-                plugin_module = import_module(plugin_module_name)
-                plugin_cls = getattr(plugin_module, plugin_cls_name)
-            except ValueError:
-                raise click.ClickException(
-                    '"{}" is not a valid plugin path'.format(plugin_name)
-                )
-            except ImportError:
-                raise click.ClickException(
-                    '"{}" does not name a Python module'.format(
-                        plugin_module_name
-                    )
-                )
-            except AttributeError:
-                raise click.ClickException(
-                    'Module "{}" does not contain the class "{}"'.format(
-                        plugin_module_name, plugin_cls_name
-                    )
-                )
-        plugins.append(plugin_cls(modules))
+    plugins = generate_plugins(plugin)
 
     # Generate the code
     codegen = CodeGen(
@@ -365,3 +328,51 @@ def remap_unsafe_module_ids(modules):
     Remap module IDs so they are safe for codegen.
     """
     return {make_safe_module_id(_id): module for _id, module in modules.items()}
+
+def prune_unspecified_categories(modules, categories):
+    """
+    Removes unspecified module categories.
+    Mutates dictionary and returns it.
+    """
+    for mod_name, mod_info in modules.items():
+        for input_name, input_info in mod_info["inputs"].items():
+            for c in input_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["inputs"][input_name]
+        for output_name, output_info in mod_info["outputs"].items():
+            for c in output_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["outputs"][output_name]
+    return modules
+
+def generate_plugins(plugin):
+    plugins = []
+    for plugin_name in plugin:
+        plugin_cls = plugin_map.get(plugin_name, None)
+        if not plugin_cls:
+            try:
+                plugin_module_name, plugin_cls_name = plugin_name.split(":")
+                plugin_module = import_module(plugin_module_name)
+                plugin_cls = getattr(plugin_module, plugin_cls_name)
+            except ValueError:
+                raise click.ClickException(
+                    '"{}" is not a valid plugin path'.format(plugin_name)
+                )
+            except ImportError:
+                raise click.ClickException(
+                    '"{}" does not name a Python module'.format(
+                        plugin_module_name
+                    )
+                )
+            except AttributeError:
+                raise click.ClickException(
+                    'Module "{}" does not contain the class "{}"'.format(
+                        plugin_module_name, plugin_cls_name
+                    )
+                )
+        plugins.append(plugin_cls(modules))
+    return plugins
