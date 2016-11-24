@@ -154,31 +154,7 @@ def run(
     else:
         raise click.ClickException("No modules specified for the project")
     # Rename any modules whose ids would break the codegen
-    cpp_keywords = [
-        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
-        "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
-        "break", "case", "catch", "char", "char16_t", "char32_t", "class",
-        "compl", "concept", "const", "constexpr", "const_cast", "continue",
-        "decltype", "default", "delete", "do", "double", "dynamic_cast",
-        "else", "enum", "explicit", "export", "extern", "false", "float",
-        "for", "friend", "goto", "if", "inline", "int", "long", "mutable",
-        "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator",
-        "or", "or_eq", "private", "protected", "public", "register",
-        "reinterpret_cast", "requires", "return short", "signed", "sizeof",
-        "static", "static_assert", "static_cast", "struct", "switch",
-        "synchronized", "template", "this", "thread_local", "throw", "true",
-        "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
-        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
-    ]
-    invalid_ids = [
-        _id for _id in modules.keys() if _id in cpp_keywords or
-        _id[0].isdigit()
-    ]
-    for _id in invalid_ids:
-        new_id = "_" + _id
-        modules[new_id] = modules[_id]
-        del modules[_id]
-
+    modules = remap_unsafe_module_ids(modules)
     # Synthesize the module and module type dicts
     modules = synthesize_firmware_module_info(modules, module_types)
 
@@ -358,3 +334,34 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
+
+# C++ keywords list
+CPP_KEYWORDS = [
+    "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
+    "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
+    "break", "case", "catch", "char", "char16_t", "char32_t", "class",
+    "compl", "concept", "const", "constexpr", "const_cast", "continue",
+    "decltype", "default", "delete", "do", "double", "dynamic_cast",
+    "else", "enum", "explicit", "export", "extern", "false", "float",
+    "for", "friend", "goto", "if", "inline", "int", "long", "mutable",
+    "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator",
+    "or", "or_eq", "private", "protected", "public", "register",
+    "reinterpret_cast", "requires", "return short", "signed", "sizeof",
+    "static", "static_assert", "static_cast", "struct", "switch",
+    "synchronized", "template", "this", "thread_local", "throw", "true",
+    "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
+    "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
+]
+
+def make_safe_module_id(_id):
+    """
+    Given an ID, return a new ID that is safe for codegen.
+    If ID is already safe, will leave it alone.
+    """
+    return "_" + _id if _id in CPP_KEYWORDS or _id[0].isdigit() else _id
+
+def remap_unsafe_module_ids(modules):
+    """
+    Remap module IDs so they are safe for codegen.
+    """
+    return {make_safe_module_id(_id): module for _id, module in modules.items()}
