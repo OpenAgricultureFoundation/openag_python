@@ -163,8 +163,10 @@ def run(
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
-    # Create the plugins
-    plugins = load_plugins(plugin)
+    # Load the plugins
+    plugin_fns = (load_plugin(plugin_name) for plugin_name in plugin)
+    # Run modules through each plugin
+    plugins = [plugin_fn(modules) for plugin_fn in plugin_fns]
 
     # Generate the code
     codegen = CodeGen(
@@ -349,30 +351,31 @@ def prune_unspecified_categories(modules, categories):
                 del mod_info["outputs"][output_name]
     return modules
 
-def load_plugins(plugin):
-    plugins = []
-    for plugin_name in plugin:
-        plugin_cls = plugin_map.get(plugin_name, None)
-        if not plugin_cls:
-            try:
-                plugin_module_name, plugin_cls_name = plugin_name.split(":")
-                plugin_module = import_module(plugin_module_name)
-                plugin_cls = getattr(plugin_module, plugin_cls_name)
-            except ValueError:
-                raise click.ClickException(
-                    '"{}" is not a valid plugin path'.format(plugin_name)
+def load_plugin(plugin_name):
+    """
+    Given a plugin name, load plugin cls from plugin directory.
+    Will throw an exception if no plugin can be found.
+    """
+    plugin_cls = plugin_map.get(plugin_name, None)
+    if not plugin_cls:
+        try:
+            plugin_module_name, plugin_cls_name = plugin_name.split(":")
+            plugin_module = import_module(plugin_module_name)
+            plugin_cls = getattr(plugin_module, plugin_cls_name)
+        except ValueError:
+            raise click.ClickException(
+                '"{}" is not a valid plugin path'.format(plugin_name)
+            )
+        except ImportError:
+            raise click.ClickException(
+                '"{}" does not name a Python module'.format(
+                    plugin_module_name
                 )
-            except ImportError:
-                raise click.ClickException(
-                    '"{}" does not name a Python module'.format(
-                        plugin_module_name
-                    )
+            )
+        except AttributeError:
+            raise click.ClickException(
+                'Module "{}" does not contain the class "{}"'.format(
+                    plugin_module_name, plugin_cls_name
                 )
-            except AttributeError:
-                raise click.ClickException(
-                    'Module "{}" does not contain the class "{}"'.format(
-                        plugin_module_name, plugin_cls_name
-                    )
-                )
-        plugins.append(plugin_cls(modules))
-    return plugins
+            )
+    return plugin_cls
