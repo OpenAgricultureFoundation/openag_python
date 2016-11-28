@@ -164,7 +164,7 @@ def run(
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
     # Create the plugins
-    plugins = generate_plugins(plugin)
+    plugins = load_plugins(plugin)
 
     # Generate the code
     codegen = CodeGen(
@@ -349,7 +349,7 @@ def prune_unspecified_categories(modules, categories):
                 del mod_info["outputs"][output_name]
     return modules
 
-def generate_plugins(plugin):
+def load_plugins(plugin):
     plugins = []
     for plugin_name in plugin:
         plugin_cls = plugin_map.get(plugin_name, None)
