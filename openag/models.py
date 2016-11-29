@@ -245,6 +245,7 @@ GitRepo = Schema({
 })
 
 FirmwareModuleType = Schema({
+    Required("_id"): str,
     "repository": Any(PioRepo, GitRepo),
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
