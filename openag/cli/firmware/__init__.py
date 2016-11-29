@@ -409,4 +409,4 @@ def read_module_types(index):
 def index_by_id(docs):
     """Index a list of docs using `_id` field.
     Returns a dictionary keyed by _id."""
-    return {_id: doc for doc in docs}
+    return {doc["_id"]: doc for doc in docs}
