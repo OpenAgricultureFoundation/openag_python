@@ -3,6 +3,7 @@ import sys
 import json
 import click
 import subprocess
+from itertools import chain
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
@@ -106,34 +107,17 @@ def run(
         )
 
     # Get the list of module types
-    module_types = {}
     # Read from the local couchdb server
     local_server = config["local_server"]["url"]
-    if local_server:
-        server = Server(local_server)
-        db = server[FIRMWARE_MODULE_TYPE]
-        for _id in db:
-            if _id.startswith("_"):
-                continue
-            click.echo(
-                "Parsing firmware module type \"{}\" from server".format(_id)
-            )
-            module_types[_id] = FirmwareModuleType(db[_id])
+    firmware_types_db =
+        (load_module_types_from_db(Server(local_server))) if local_server else ()
     # Check for working modules in the lib folder
     # Do this second so project-local values overwrite values from the server
     lib_path = os.path.join(project_dir, "lib")
-    for dir_name in os.listdir(lib_path):
-        dir_path = os.path.join(lib_path, dir_name)
-        if not os.path.isdir(dir_path):
-            continue
-        config_path = os.path.join(dir_path, "module.json")
-        if os.path.isfile(config_path):
-            with open(config_path) as f:
-                click.echo(
-                    "Parsing firmware module type \"{}\" from lib "
-                    "folder".format(dir_name)
-                )
-                module_types[dir_name] = FirmwareModuleType(json.load(f))
+    firmware_types_lib = (load_module_types_from_lib(lib_path))
+    # Chain module type generators and then index by _id to create a dictionary
+    # of module types.
+    module_types = index_by_id(chain(firmware_types_db, firmware_types_lib))
 
     # Get the list of modules
     modules = {}
@@ -379,3 +363,50 @@ def load_plugin(plugin_name):
                 )
             )
     return plugin_cls
+
+
+def load_module_types_from_lib(lib_path):
+    """
+    Given a lib_path, generates a list of firmware module types by looking for
+    module.json files in a lib directory.
+    """
+    for dir_name in os.listdir(lib_path):
+        dir_path = os.path.join(lib_path, dir_name)
+        if not os.path.isdir(dir_path):
+            continue
+        config_path = os.path.join(dir_path, "module.json")
+        if os.path.isfile(config_path):
+            with open(config_path) as f:
+                click.echo(
+                    "Parsing firmware module type \"{}\" from lib "
+                    "folder".format(dir_name)
+                )
+                doc = json.load(f)
+                doc["_id"] = dir_name
+                firmware_type = FirmwareModuleType(doc)
+                yield firmware_type
+
+
+def load_module_types_from_db(server):
+    """Given a Couch database server instance, generate firmware type docs."""
+    db = server[FIRMWARE_MODULE_TYPE]
+    for _id in db:
+        # Skip design documents
+        if _id.startswith("_"):
+            continue
+        click.echo("Parsing firmware module type \"{}\" from DB".format(_id))
+        doc = db[_id]
+        firmware_type = FirmwareModuleType(doc)
+        yield firmware_type
+
+
+def read_module_types(index):
+    """Read module type docs from an index. Returns generator."""
+    for doc in index[FIRMWARE_MODULE_TYPE]:
+        yield FirmwareModuleType(doc)
+
+
+def index_by_id(docs):
+    """Index a list of docs using `_id` field.
+    Returns a dictionary keyed by _id."""
+    return {_id: doc for doc in docs}
