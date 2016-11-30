@@ -11,7 +11,7 @@ from base import CodeGen
 from plugins import plugin_map
 from ..config import config
 from openag.couch import Server
-from openag.utils import synthesize_firmware_module_info
+from openag.utils import synthesize_firmware_module_info, make_dir_name_from_url
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
 from openag.categories import all_categories, SENSORS, ACTUATORS, CALIBRATION
@@ -232,18 +232,24 @@ def run(
         modules=modules, plugins=plugins,
         status_update_interval=status_update_interval
     )
-    for dep in codegen.all_pio_dependencies():
-        subprocess.call(["platformio", "lib", "install", str(dep)])
+    pio_ids = (dep["id"] for dep in codegen.all_pio_dependencies())
+    for _id in pio_ids:
+        subprocess.call(["platformio", "lib", "install", str(_id)])
     lib_dir = os.path.join(project_dir, "lib")
     for dep in codegen.all_git_dependencies():
-        dep_folder_name = dep.split("/")[-1].split(".")[0]
+        url = dep["url"]
+        branch = dep.get("branch", "master")
+        dep_folder_name = make_dir_name_from_url(url)
         dep_folder = os.path.join(lib_dir, dep_folder_name)
         if os.path.isdir(dep_folder):
             click.echo('Updating "{}"'.format(dep_folder_name))
+            subprocess.call(
+                ["git", "checkout", "--quiet", branch], cwd=dep_folder)
             subprocess.call(["git", "pull"], cwd=dep_folder)
         else:
             click.echo('Downloading "{}"'.format(dep_folder_name))
-            subprocess.call(["git", "clone", dep], cwd=lib_dir)
+            subprocess.call(
+                ["git", "clone", "-b", branch, url, dep_folder], cwd=lib_dir)
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
 

@@ -1,6 +1,8 @@
 __all__ = ["Plugin", "CodeGen"]
 
 import itertools
+from openag.models import PioRepo
+from ...utils import dedupe_by, make_dir_name_from_url
 
 def FlowManager(start_string, end_string):
     """
@@ -117,17 +119,17 @@ class Plugin:
 
     def pio_dependencies(self):
         """
-        Should return a set of the IDs of all of the PlatformIO libraries
-        required by this plugin
+        Should return a list of PioRepo dicts describing the PlatformIO
+        libraries required by this plugin
         """
-        return set()
+        return []
 
     def git_dependencies(self):
         """
-        Should return a set of URLs of git repositories containing code
-        required by this plugin
+        Should return a list of GitRepo dicts describing git repositories
+        containing code required by this plugin.
         """
-        return set()
+        return []
 
     def header_files(self):
         """
@@ -225,28 +227,30 @@ class CodeGen(Plugin):
         self.status_update_interval = status_update_interval
 
     def all_pio_dependencies(self):
-        deps = set()
+        deps = []
         for plugin in self.plugins:
-            deps = deps.union(plugin.pio_dependencies())
+            deps.extend(plugin.pio_dependencies())
         for mod_info in self.modules.values():
             if mod_info.get("repository", {}).get("type", None) == "pio":
-                deps.add(mod_info["repository"]["id"])
+                deps.append(mod_info["repository"])
             for mod_dep in mod_info.get("dependencies", []):
                 if mod_dep["type"] == "pio":
-                    deps.add(mod_dep["id"])
-        return deps
+                    deps.append(mod_dep)
+        unique_deps = dedupe_by(deps, get_id)
+        return unique_deps
 
     def all_git_dependencies(self):
-        deps = set()
+        deps = []
         for plugin in self.plugins:
-            deps = deps.union(plugin.git_dependencies())
+            deps.extend(plugin.git_dependencies())
         for mod_info in self.modules.values():
             if mod_info.get("repository", {}).get("type", None) == "git":
-                deps.add(mod_info["repository"]["url"])
+                deps.append(mod_info["repository"])
             for mod_dep in mod_info.get("dependencies", []):
                 if mod_dep["type"] == "git":
-                    deps.add(mod_dep["url"])
-        return deps
+                    deps.append(mod_dep)
+        unique_deps = dedupe_by(deps, make_dir_name_from_dep)
+        return unique_deps
 
     def write_to(self, f):
         """
@@ -315,7 +319,12 @@ class CodeGen(Plugin):
                     plugin.end_read_module_status(f)
 
     def pio_dependencies(self):
-        return set([345])
+        return [
+            PioRepo({
+                "type": "pio",
+                "id": 345
+            })
+        ]
 
     def header_files(self):
         res = set()
@@ -361,3 +370,9 @@ class CodeGen(Plugin):
 
     def update_module(self, mod_name, f):
         f.writeln("{obj_name}.update();".format(obj_name=mod_name))
+
+def make_dir_name_from_dep(dep):
+    return make_dir_name_from_url(dep["url"])
+
+def get_id(dep):
+    return dep["id"]
