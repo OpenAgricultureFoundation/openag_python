@@ -124,8 +124,12 @@ class Plugin:
 
     def git_dependencies(self):
         """
-        Should return a set of URLs of git repositories containing code
-        required by this plugin
+        Should return a set of tuples describing git repositories containing
+        code required by this plugin. Tuples should be of shape::
+
+            (url, branch)
+
+        where branch is optional and inferred to be master if not provided.
         """
         return set()
 
@@ -242,10 +246,10 @@ class CodeGen(Plugin):
             deps = deps.union(plugin.git_dependencies())
         for mod_info in self.modules.values():
             if mod_info.get("repository", {}).get("type", None) == "git":
-                deps.add(mod_info["repository"]["url"])
+                deps.add(read_dep_as_tuple(mod_info["repository"]))
             for mod_dep in mod_info.get("dependencies", []):
                 if mod_dep["type"] == "git":
-                    deps.add(mod_dep["url"])
+                    deps.add(read_dep_as_tuple(mod_dep))
         return deps
 
     def write_to(self, f):
@@ -361,3 +365,6 @@ class CodeGen(Plugin):
 
     def update_module(self, mod_name, f):
         f.writeln("{obj_name}.update();".format(obj_name=mod_name))
+
+def read_dep_as_tuple(dep):
+    return (dep["url"], dep.get("branch", "master"))
