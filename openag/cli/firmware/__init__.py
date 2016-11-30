@@ -6,6 +6,7 @@ import subprocess
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
+from urlparse import urlparse
 
 from base import CodeGen
 from plugins import plugin_map
@@ -236,14 +237,15 @@ def run(
         subprocess.call(["platformio", "lib", "install", str(dep)])
     lib_dir = os.path.join(project_dir, "lib")
     for url, branch in codegen.all_git_dependencies():
-        dep_folder_name = url.split("/")[-1].split(".")[0]
+        dep_folder_name = make_dir_name_from_url(url)
         dep_folder = os.path.join(lib_dir, dep_folder_name)
         if os.path.isdir(dep_folder):
             click.echo('Updating "{}"'.format(dep_folder_name))
+            subprocess.call(["git", "checkout", branch], cwd=dep_folder)
             subprocess.call(["git", "pull"], cwd=dep_folder)
         else:
             click.echo('Downloading "{}"'.format(dep_folder_name))
-            subprocess.call(["git", "clone", "-b", branch, url], cwd=lib_dir)
+            subprocess.call(["git", "clone", "-b", branch, url, dep_folder], cwd=lib_dir)
     with open(src_file_path, "w+") as f:
         codegen.write_to(f)
 
@@ -358,3 +360,9 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
+
+def make_dir_name_from_url(url):
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    path = parsed.path.replace('/', ':')
+    return hostname + path
