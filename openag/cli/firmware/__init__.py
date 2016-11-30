@@ -6,7 +6,6 @@ import subprocess
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
-from urlparse import urlparse
 
 from base import CodeGen
 from plugins import plugin_map
