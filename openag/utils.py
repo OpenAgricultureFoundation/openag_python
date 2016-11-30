@@ -1,4 +1,6 @@
 from openag.categories import SENSORS, ACTUATORS
+from urlparse import urlparse
+from os import path
 
 __all__ = ["synthesize_firmware_module_info"]
 
@@ -75,3 +77,28 @@ def synthesize_firmware_module_info(modules, module_types):
         mod_info["outputs"] = mod_outputs
         res[mod_id] = mod_info
     return res
+
+def dedupe_by(things, key=None):
+    """
+    Given an iterator of things and an optional key generation function, return
+    a new iterator of deduped things. Things are compared and de-duped by the
+    key function, which is hash() by default.
+    """
+    if not key:
+        key = hash
+    index = {key(thing): thing for thing in things}
+    return index.values()
+
+def make_dir_name_from_url(url):
+    """This function attempts to emulate something like Git's "humanish"
+    directory naming for clone. It's probably not a perfect facimile,
+    but it's close."""
+    url_path = urlparse(url).path
+    head, tail = path.split(url_path)
+    # If tail happens to be empty as in case `/foo/`, use foo.
+    # If we are looking at a valid but ugly path such as
+    # `/foo/.git`, use the "foo" not the ".git".
+    if len(tail) is 0 or tail[0] is ".":
+        head, tail = path.split(head)
+    dir_name, ext = path.splitext(tail)
+    return dir_name

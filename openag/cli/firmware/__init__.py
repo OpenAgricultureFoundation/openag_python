@@ -12,7 +12,7 @@ from base import CodeGen
 from plugins import plugin_map
 from ..config import config
 from openag.couch import Server
-from openag.utils import synthesize_firmware_module_info
+from openag.utils import synthesize_firmware_module_info, make_dir_name_from_url
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
 from openag.categories import all_categories, SENSORS, ACTUATORS, CALIBRATION
@@ -233,10 +233,13 @@ def run(
         modules=modules, plugins=plugins,
         status_update_interval=status_update_interval
     )
-    for dep in codegen.all_pio_dependencies():
-        subprocess.call(["platformio", "lib", "install", str(dep)])
+    pio_ids = (dep["id"] for dep in codegen.all_pio_dependencies())
+    for _id in pio_ids:
+        subprocess.call(["platformio", "lib", "install", str(_id)])
     lib_dir = os.path.join(project_dir, "lib")
-    for url, branch in codegen.all_git_dependencies():
+    for dep in codegen.all_git_dependencies():
+        url = dep["url"]
+        branch = dep.get("branch", "master")
         dep_folder_name = make_dir_name_from_url(url)
         dep_folder = os.path.join(lib_dir, dep_folder_name)
         if os.path.isdir(dep_folder):
@@ -362,17 +365,3 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
-
-def make_dir_name_from_url(url):
-    """This function attempts to emulate something like Git's "humanish"
-    directory naming for clone. It's probably not a perfect facimile,
-    but it's close."""
-    path = urlparse(url).path
-    head, tail = os.path.split(path)
-    # If tail happens to be empty as in case `/foo/`, use foo.
-    # If we are looking at a valid but ugly path such as
-    # `/foo/.git`, use the "foo" not the ".git".
-    if len(tail) is 0 or tail[0] is ".":
-        head, tail = os.path.split(head)
-    dir_name, ext = os.path.splitext(tail)
-    return dir_name
