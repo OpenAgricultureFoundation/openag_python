@@ -149,7 +149,7 @@ def run(
                 doc = json.load(f)
                 if not doc.get("_id"):
                     # Patch in id if id isn't present
-                    doc["_id"] = parent_dirname(module_file_path)
+                    doc["_id"] = parent_dirname(config_path)
                 firmware_types.append(FirmwareModuleType(doc))
 
     # Get the list of modules
