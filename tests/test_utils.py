@@ -47,7 +47,7 @@ def test_make_dir_name_from_url():
 
 def test_safe_cpp_var():
     safe_var = safe_cpp_var("for")
-    assert safe_var == "my_for"
+    assert safe_var == "_for"
 
 def test_parent_dirname():
     assert parent_dirname("foo/bar.git") == "foo"
