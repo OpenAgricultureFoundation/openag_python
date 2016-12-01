@@ -166,8 +166,9 @@ def run(
                 continue
             click.echo("Parsing firmware module \"{}\"".format(_id))
             firmware.append(FirmwareModule(db[_id]))
-    else:
-        raise click.ClickException("No modules specified for the project")
+
+    if len(firmware) == 0:
+        click.echo("Warning: no modules specified for the project")
 
     module_types = index_by_id(firmware_types)
     modules = index_by_id(firmware)
