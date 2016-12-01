@@ -11,7 +11,10 @@ from base import CodeGen
 from plugins import plugin_map
 from ..config import config
 from openag.couch import Server
-from openag.utils import synthesize_firmware_module_info, make_dir_name_from_url
+from openag.utils import (
+    synthesize_firmware_module_info, make_dir_name_from_url, index_by_id,
+    parent_dirname
+)
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
 from openag.categories import all_categories, SENSORS, ACTUATORS, CALIBRATION
@@ -105,12 +108,21 @@ def run(
             "please use the `openag firmware init` command"
         )
 
-    # Get the list of module types
-    module_types = {}
-    # Read from the local couchdb server
+    firmware_types = []
+    firmware = []
+
     local_server = config["local_server"]["url"]
-    if local_server:
-        server = Server(local_server)
+    server = Server(local_server) if local_server else None
+    modules_json = json.load(modules_file) if modules_file else {}
+
+    if modules_json.get(FIRMWARE_MODULE_TYPE):
+        for module in modules_json[FIRMWARE_MODULE_TYPE]:
+            click.echo(
+                "Parsing firmware module type \"{}\" from modules file"
+                .format(module["_id"])
+            )
+            firmware_types.append(FirmwareModuleType(module))
+    elif server:
         db = server[FIRMWARE_MODULE_TYPE]
         for _id in db:
             if _id.startswith("_"):
@@ -118,7 +130,8 @@ def run(
             click.echo(
                 "Parsing firmware module type \"{}\" from server".format(_id)
             )
-            module_types[_id] = FirmwareModuleType(db[_id])
+            firmware_types.append(FirmwareModuleType(db[_id]))
+
     # Check for working modules in the lib folder
     # Do this second so project-local values overwrite values from the server
     lib_path = os.path.join(project_dir, "lib")
@@ -133,99 +146,43 @@ def run(
                     "Parsing firmware module type \"{}\" from lib "
                     "folder".format(dir_name)
                 )
-                module_types[dir_name] = FirmwareModuleType(json.load(f))
+                doc = json.load(f)
+                if not doc.get("_id"):
+                    # Patch in id if id isn't present
+                    doc["_id"] = parent_dirname(module_file_path)
+                firmware_types.append(FirmwareModuleType(doc))
 
     # Get the list of modules
-    modules = {}
-    if modules_file:
-        _modules = json.load(modules_file)
-        for _id, info in _modules.items():
+    if modules_json.get(FIRMWARE_MODULE):
+        for module in modules_json[FIRMWARE_MODULE]:
             click.echo(
-                "Parsing firmware module \"{}\" from modules file".format(_id)
+                "Parsing firmware module \"{}\" from modules file"
+                .format(module["_id"])
             )
-            modules[_id] = FirmwareModule(info)
-    elif local_server:
-        db = server[FIRMWARE_MODULE]
+            firmware.append(FirmwareModule(module))
+    elif server:
         for _id in db:
             if _id.startswith("_"):
                 continue
             click.echo("Parsing firmware module \"{}\"".format(_id))
-            modules[_id] = FirmwareModule(db[_id])
+            firmware.append(FirmwareModule(db[_id]))
     else:
         raise click.ClickException("No modules specified for the project")
-    # Rename any modules whose ids would break the codegen
-    cpp_keywords = [
-        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
-        "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor", "bool",
-        "break", "case", "catch", "char", "char16_t", "char32_t", "class",
-        "compl", "concept", "const", "constexpr", "const_cast", "continue",
-        "decltype", "default", "delete", "do", "double", "dynamic_cast",
-        "else", "enum", "explicit", "export", "extern", "false", "float",
-        "for", "friend", "goto", "if", "inline", "int", "long", "mutable",
-        "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator",
-        "or", "or_eq", "private", "protected", "public", "register",
-        "reinterpret_cast", "requires", "return short", "signed", "sizeof",
-        "static", "static_assert", "static_cast", "struct", "switch",
-        "synchronized", "template", "this", "thread_local", "throw", "true",
-        "try", "typedef", "typeid", "typename", "union", "unsigned", "using",
-        "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
-    ]
-    invalid_ids = [
-        _id for _id in modules.keys() if _id in cpp_keywords or
-        _id[0].isdigit()
-    ]
-    for _id in invalid_ids:
-        new_id = "_" + _id
-        modules[new_id] = modules[_id]
-        del modules[_id]
 
+    module_types = index_by_id(firmware_types)
+    modules = index_by_id(firmware)
     # Synthesize the module and module type dicts
     modules = synthesize_firmware_module_info(modules, module_types)
-
     # Update the module inputs and outputs using the categories
-    for mod_name, mod_info in modules.items():
-        for input_name, input_info in mod_info["inputs"].items():
-            for c in input_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["inputs"][input_name]
-        for output_name, output_info in mod_info["outputs"].items():
-            for c in output_info["categories"]:
-                if c in categories:
-                    break
-            else:
-                del mod_info["outputs"][output_name]
+    modules = prune_unspecified_categories(modules, categories)
 
     # Generate src.ino
     src_dir = os.path.join(project_dir, "src")
     src_file_path = os.path.join(src_dir, "src.ino")
-    # Create the plugins
-    plugins = []
-    for plugin_name in plugin:
-        plugin_cls = plugin_map.get(plugin_name, None)
-        if not plugin_cls:
-            try:
-                plugin_module_name, plugin_cls_name = plugin_name.split(":")
-                plugin_module = import_module(plugin_module_name)
-                plugin_cls = getattr(plugin_module, plugin_cls_name)
-            except ValueError:
-                raise click.ClickException(
-                    '"{}" is not a valid plugin path'.format(plugin_name)
-                )
-            except ImportError:
-                raise click.ClickException(
-                    '"{}" does not name a Python module'.format(
-                        plugin_module_name
-                    )
-                )
-            except AttributeError:
-                raise click.ClickException(
-                    'Module "{}" does not contain the class "{}"'.format(
-                        plugin_module_name, plugin_cls_name
-                    )
-                )
-        plugins.append(plugin_cls(modules))
+    # Load the plugins
+    plugin_fns = (load_plugin(plugin_name) for plugin_name in plugin)
+    # Run modules through each plugin
+    plugins = [plugin_fn(modules) for plugin_fn in plugin_fns]
 
     # Generate the code
     codegen = CodeGen(
@@ -296,7 +253,11 @@ def run_module(
     module_json_path = os.path.join(here, "module.json")
     try:
         with open(module_json_path) as f:
-            module_type = FirmwareModuleType(json.load(f))
+            doc = json.load(f)
+            if not doc.get("_id"):
+                # Patch in id if not present
+                doc["_id"] = parent_dirname(module_json_path)
+            module_type = FirmwareModuleType(doc)
     except IOError:
         raise click.ClickException("No module.json file found")
 
@@ -352,10 +313,13 @@ def run_module(
 
     # Write the modules.json file
     modules = {
-        "module": FirmwareModule({
-            "type": "module",
-            "arguments": list(real_args)
-        })
+        FIRMWARE_MODULE: [
+            FirmwareModule({
+                "_id": "module_1",
+                "type": "module",
+                "arguments": list(real_args)
+            })
+        ]
     }
     modules_file = os.path.join(build_path, "modules.json")
     with open(modules_file, "w") as f:
@@ -364,3 +328,52 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
+
+def prune_unspecified_categories(modules, categories):
+    """
+    Removes unspecified module categories.
+    Mutates dictionary and returns it.
+    """
+    for mod_name, mod_info in modules.items():
+        for input_name, input_info in mod_info["inputs"].items():
+            for c in input_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["inputs"][input_name]
+        for output_name, output_info in mod_info["outputs"].items():
+            for c in output_info["categories"]:
+                if c in categories:
+                    break
+            else:
+                del mod_info["outputs"][output_name]
+    return modules
+
+def load_plugin(plugin_name):
+    """
+    Given a plugin name, load plugin cls from plugin directory.
+    Will throw an exception if no plugin can be found.
+    """
+    plugin_cls = plugin_map.get(plugin_name, None)
+    if not plugin_cls:
+        try:
+            plugin_module_name, plugin_cls_name = plugin_name.split(":")
+            plugin_module = import_module(plugin_module_name)
+            plugin_cls = getattr(plugin_module, plugin_cls_name)
+        except ValueError:
+            raise click.ClickException(
+                '"{}" is not a valid plugin path'.format(plugin_name)
+            )
+        except ImportError:
+            raise click.ClickException(
+                '"{}" does not name a Python module'.format(
+                    plugin_module_name
+                )
+            )
+        except AttributeError:
+            raise click.ClickException(
+                'Module "{}" does not contain the class "{}"'.format(
+                    plugin_module_name, plugin_cls_name
+                )
+            )
+    return plugin_cls
