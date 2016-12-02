@@ -4,6 +4,7 @@ import tempfile
 from click import ClickException
 from click.testing import CliRunner
 
+from openag.db_names import FIRMWARE_MODULE
 from openag.cli.firmware import init, run, run_module
 
 EXAMPLE_HEADER = """
@@ -38,6 +39,7 @@ bool Module::get_output(std_msgs::Float32 &msg) {
 void Module::set_input(std_msgs::Float32 msg) { }
 """
 EXAMPLE_JSON = json.dumps({
+    "_id": "module",
     "class_name": "Module",
     "header_file": "module.h",
     "inputs": {
@@ -142,9 +144,12 @@ def test_run_single_module():
             f.write(EXAMPLE_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
-                "module": {
-                    "type": "module"
-                }
+                FIRMWARE_MODULE: [
+                    {
+                        "_id": "module",
+                        "type": "module"
+                    }
+                ]
             }, f)
 
         res = runner.invoke(run, ["-f", "modules.json"])
@@ -179,8 +184,16 @@ def test_run_multiple_modules():
             f.write(EXAMPLE_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
-                "module_a": {"type": "module"},
-                "module_b": {"type": "module"}
+                FIRMWARE_MODULE: [
+                    {
+                        "_id": "module_a",
+                        "type": "module"
+                    },
+                    {
+                        "_id": "module_b",
+                        "type": "module"
+                    }
+                ]
             }, f)
 
         res = runner.invoke(run, ["-f", "modules.json"])
@@ -248,7 +261,14 @@ bool Module::get_output(std_msgs::UInt8MultiArray &msg) {
                 }
             }, f)
         with open(os.path.join(here, "modules.json"), "w+") as f:
-            json.dump({"module": {"type": "module"}}, f)
+            json.dump({
+                FIRMWARE_MODULE: [
+                    {
+                        "_id": "module",
+                        "type": "module"
+                    }
+                ]
+            }, f)
 
         res = runner.invoke(run, ["-f", "modules.json", "-p", "csv"])
         assert isinstance(res.exception, RuntimeError), repr(res.exception)
@@ -319,12 +339,16 @@ def test_run_invalid_module_ids():
             f.write(EXAMPLE_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
-                "for": {
-                    "type": "module"
-                },
-                "123": {
-                    "type": "module"
-                }
+                FIRMWARE_MODULE: [
+                    {
+                        "_id": "for",
+                        "type": "module"
+                    },
+                    {
+                        "_id": "123",
+                        "type": "module"
+                    }
+                ]
             }, f)
 
         res = runner.invoke(run, ["-f", "modules.json"])

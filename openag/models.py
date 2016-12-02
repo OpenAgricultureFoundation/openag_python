@@ -5,6 +5,7 @@ __all__ = [
 
 from .categories import SENSORS, ACTUATORS, CALIBRATION
 from voluptuous import Schema, Required, Any, Extra, Optional, REMOVE_EXTRA
+from openag.utils import safe_cpp_var
 
 Environment = Schema({
     "name": Any(str, unicode),
@@ -246,6 +247,7 @@ GitRepo = Schema({
 })
 
 FirmwareModuleType = Schema({
+    Required("_id"): safe_cpp_var,
     "repository": Any(PioRepo, GitRepo),
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
@@ -313,6 +315,7 @@ for information on how to write firmware modules.
 """
 
 FirmwareModule = Schema({
+    Required("_id"): safe_cpp_var,
     Required("type"): Any(str, unicode),
     "environment": Any(str, unicode),
     "arguments": [object],
