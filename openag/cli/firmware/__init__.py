@@ -161,10 +161,11 @@ def run(
             )
             firmware.append(FirmwareModule(module))
     elif server:
+        db = server[FIRMWARE_MODULE]
         for _id in db:
             if _id.startswith("_"):
                 continue
-            click.echo("Parsing firmware module \"{}\"".format(_id))
+            click.echo("Parsing firmware module \"{}\" from server".format(_id))
             firmware.append(FirmwareModule(db[_id]))
 
     if len(firmware) == 0:
