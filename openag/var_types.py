@@ -24,7 +24,7 @@ AIR_CARBON_DIOXIDE = EnvVar(
     "air_carbon_dioxide", "The amount of Carbon Dioxide in the air", "ppm"
 )
 WATER_TEMPERATURE = EnvVar(
-    "water_temperature", "Temperature of the air in degrees Celcius",
+    "water_temperature", "Temperature of the water in degrees Celcius",
     "degrees C"
 )
 WATER_POTENTIAL_HYDROGEN = EnvVar(
