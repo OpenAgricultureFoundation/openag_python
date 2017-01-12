@@ -25,6 +25,11 @@ value of the set point. The set point stays in effect until a new set point for
 that variable type is reached. The list of set points must be ordered by
 offset.
 
+The recipe will end as soon as the last set point is emitted. Because of this,
+it is recommended to end the recipe with a `recipe_end` set point that
+indicates that the recipe should be stopped. The `value` field for that set
+point could be set to the empty string (`""`).
+
 See `this gist
 <https://gist.github.com/LeonChambers/11a76af7867acb682a849b414a97c483.html>`_
 for an example of a recipe.
