@@ -1,6 +1,7 @@
 __all__ = ["Plugin", "CodeGen"]
 
 import itertools
+from openag.models import GitRepo
 from ...utils import dedupe_by, make_dir_name_from_url
 
 def FlowManager(start_string, end_string):
@@ -316,6 +317,15 @@ class CodeGen(Plugin):
                         plugin.read_module_status(mod_name, f)
                 for plugin in self.plugins:
                     plugin.end_read_module_status(f)
+
+    def git_dependencies(self):
+        return [
+            GitRepo({
+                "type": "git",
+                "url": "https://github.com/OpenAgInitiative/rosserial_arduino_libs.git",
+                "branch": "diagnostics"
+            })
+        ]
 
     def header_files(self):
         res = set()

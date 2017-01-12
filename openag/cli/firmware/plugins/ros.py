@@ -1,16 +1,6 @@
-from openag.models import GitRepo
 from ..base import Plugin
 
 class ROSCommPlugin(Plugin):
-    def git_dependencies(self):
-        return [
-            GitRepo({
-                "type": "git",
-                "url": "https://github.com/OpenAgInitiative/rosserial_arduino_libs.git",
-                "branch": "diagnostics"
-            })
-        ]
-
     def header_files(self):
         return set([
             "ros.h", "openag_brain/DiagnosticStatus.h",
