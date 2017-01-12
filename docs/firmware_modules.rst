@@ -25,7 +25,12 @@ working as desired). The superclass also defines a :cpp:member:`status_msg`
 attribute which is a :cpp:class:`String` that the firmware module should use to
 describe the status of the module. This is generally an empty string when the
 status level is "ok" and an error message when the status level is "warn" or
-"error".
+"error". Finally, the superclass defines a :cpp:member:`status_code` attribute
+which is a :spp:class:`uint8_t` value that the firmware module should use to
+describe the status of the module. This serves the same purpose as the 
+:cpp:member:`status_msg` field. The `module.json` file (described in more
+detail below) should contain a dictionary explaining the meaning of all valid
+:cpp:member:`status_code` values for the module.
 
 In addition to these standard functions and attributes (which are all defined
 in the header file for the :cpp:class:`Module` class), the module must define a
