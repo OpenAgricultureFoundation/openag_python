@@ -1,17 +1,29 @@
+from openag.models import GitRepo
 from ..base import Plugin
 
 class ROSCommPlugin(Plugin):
+    def git_dependencies(self):
+        return [
+            GitRepo({
+                "type": "git",
+                "url": "https://github.com/OpenAgInitiative/rosserial_arduino_libs.git",
+                "branch": "diagnostics"
+            })
+        ]
+
     def header_files(self):
         return set([
-            "ros.h", "diagnostic_msgs/DiagnosticStatus.h",
-            "diagnostic_msgs/DiagnosticArray.h"
+            "ros.h", "openag_brain/DiagnosticStatus.h",
+            "openag_brain/DiagnosticArray.h"
         ])
 
     def write_declarations(self, f):
         f.writeln("ros::NodeHandle nh;")
-        f.writeln("diagnostic_msgs::DiagnosticArray status_array;")
+        f.writeln("openag_brain::DiagnosticArray status_array;")
         f.writeln(
-            'ros::Publisher pub_diagnostics("/diagnostics", &status_array);'
+            'ros::Publisher pub_diagnostics('
+                '"/internal_diagnostics", &status_array'
+            ');'
         )
         for mod_name, mod_info in self.modules.items():
             # Define publishers for all outputs
@@ -78,7 +90,7 @@ class ROSCommPlugin(Plugin):
 
     def start_read_module_status(self, f):
         f.writeln(
-            "diagnostic_msgs::DiagnosticStatus statuses[{num_modules}];".format(
+            "openag_brain::DiagnosticStatus statuses[{num_modules}];".format(
                 num_modules = len(self.modules)
             )
         )
@@ -88,7 +100,7 @@ class ROSCommPlugin(Plugin):
         self.read_module_index = 0
 
     def read_module_status(self, mod_name, f):
-        f.writeln("diagnostic_msgs::DiagnosticStatus {mod_name}_status;".format(
+        f.writeln("openag_brain::DiagnosticStatus {mod_name}_status;".format(
             mod_name=mod_name
         ))
         f.writeln("{mod_name}_status.level = {mod_name}.status_level;".format(
@@ -97,24 +109,9 @@ class ROSCommPlugin(Plugin):
         f.writeln('{mod_name}_status.name = "{mod_name}";'.format(
             mod_name=mod_name
         ))
-        f.writeln(
-            'int {mod_name}_buf_len = {mod_name}.status_msg.length()+1;'.format(
-                mod_name=mod_name
-            )
-        )
-        f.writeln('char {mod_name}_buf[{mod_name}_buf_len];'.format(
+        f.writeln('{mod_name}_status.code = {mod_name}.status_code;'.format(
             mod_name=mod_name
         ))
-        f.writeln(
-            '{mod_name}.status_msg.toCharArray({mod_name}_buf, '
-            '{mod_name}_buf_len);'.format(mod_name=mod_name)
-        )
-        f.writeln('{mod_name}_status.message = {mod_name}_buf;'.format(
-            mod_name=mod_name
-        ))
-        f.writeln('{mod_name}_status.hardware_id = "none";'.format(
-            mod_name=mod_name
-        ));
         f.writeln('statuses[{i}] = {mod_name}_status;'.format(
             i=self.read_module_index, mod_name=mod_name
         ));

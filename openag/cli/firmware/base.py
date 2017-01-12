@@ -1,7 +1,6 @@
 __all__ = ["Plugin", "CodeGen"]
 
 import itertools
-from openag.models import PioRepo
 from ...utils import dedupe_by, make_dir_name_from_url
 
 def FlowManager(start_string, end_string):
@@ -317,14 +316,6 @@ class CodeGen(Plugin):
                         plugin.read_module_status(mod_name, f)
                 for plugin in self.plugins:
                     plugin.end_read_module_status(f)
-
-    def pio_dependencies(self):
-        return [
-            PioRepo({
-                "type": "pio",
-                "id": 345
-            })
-        ]
 
     def header_files(self):
         res = set()
