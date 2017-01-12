@@ -22,6 +22,7 @@ class Module {
     void set_input(std_msgs::Float32 msg);
     uint8_t status_level;
     String status_msg;
+    uint8_t status_code;
 };
 
 #endif """
@@ -38,7 +39,7 @@ bool Module::get_output(std_msgs::Float32 &msg) {
 
 void Module::set_input(std_msgs::Float32 msg) { }
 """
-EXAMPLE_JSON = json.dumps({
+EXAMPLE_MODULE_JSON = json.dumps({
     "_id": "module",
     "class_name": "Module",
     "header_file": "module.h",
@@ -52,6 +53,12 @@ EXAMPLE_JSON = json.dumps({
             "type": "std_msgs/Float32",
         }
     }
+})
+
+EXAMPLE_LIBRARY_JSON = json.dumps({
+    "name": "module",
+    "frameworks": "arduino",
+    "platforms": "*"
 })
 
 def test_run_no_modules():
@@ -113,7 +120,10 @@ def test_run_module():
             f.write(EXAMPLE_SOURCE)
         # Write module.json file
         with open("module.json", "w+") as f:
-            f.write(EXAMPLE_JSON)
+            f.write(EXAMPLE_MODULE_JSON)
+        # Write library.json file
+        with open("library.json", "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
 
         # Initialize the project
         res = runner.invoke(init)
@@ -141,7 +151,9 @@ def test_run_single_module():
         with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
             f.write(EXAMPLE_SOURCE)
         with open(os.path.join(module_folder, "module.json"), "w+") as f:
-            f.write(EXAMPLE_JSON)
+            f.write(EXAMPLE_MODULE_JSON)
+        with open(os.path.join(module_folder, "library.json"), "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
                 FIRMWARE_MODULE: [
@@ -181,7 +193,9 @@ def test_run_multiple_modules():
         with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
             f.write(EXAMPLE_SOURCE)
         with open(os.path.join(module_folder, "module.json"), "w+") as f:
-            f.write(EXAMPLE_JSON)
+            f.write(EXAMPLE_MODULE_JSON)
+        with open(os.path.join(module_folder, "library.json"), "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
                 FIRMWARE_MODULE: [
@@ -317,6 +331,9 @@ void MyModule::update() { }
                 ]
             }, f)
 
+        with open("library.json", "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
+
         res = runner.invoke(run_module, ["-p", "csv"])
         assert res.exit_code == 0, repr(res.exception) or res.output
 
@@ -336,7 +353,9 @@ def test_run_invalid_module_ids():
         with open(os.path.join(module_folder, "module.cpp"), "w+") as f:
             f.write(EXAMPLE_SOURCE)
         with open(os.path.join(module_folder, "module.json"), "w+") as f:
-            f.write(EXAMPLE_JSON)
+            f.write(EXAMPLE_MODULE_JSON)
+        with open(os.path.join(module_folder, "library.json"), "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
         with open(os.path.join(here, "modules.json"), "w+") as f:
             json.dump({
                 FIRMWARE_MODULE: [
@@ -400,6 +419,9 @@ void MyModule::update() {
                     }
                 ]
             }, f)
+
+        with open("library.json", "w+") as f:
+            f.write(EXAMPLE_LIBRARY_JSON)
 
         res = runner.invoke(run_module)
         assert res.exit_code == 0, repr(res.exception)
