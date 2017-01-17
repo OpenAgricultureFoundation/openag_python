@@ -256,7 +256,7 @@ FirmwareModuleType = Schema({
     "inputs": {Extra: FirmwareInput},
     "outputs": {Extra: FirmwareOutput},
     "dependencies": [Any(PioRepo, GitRepo)],
-    "codes": {int: Any(str, unicode)}
+    "status_codes": {Extra: Any(str, unicode)}
 }, extra=REMOVE_EXTRA)
 FirmwareModuleType.__doc__ = """
 A :class:`~openag.models.FirmwareModuleType` represents a firmware library for
@@ -314,7 +314,7 @@ for information on how to write firmware modules.
     should be a list of dictionaries with the same structure as is required by
     the "repository" field.
 
-.. py:attribute:: codes
+.. py:attribute:: status_codes
 
     (dict) A dictionary mapping status codes (as 8-bit integers) for this
     module to strings describing the relevant status.
