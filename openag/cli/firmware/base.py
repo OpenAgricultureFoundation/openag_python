@@ -322,8 +322,7 @@ class CodeGen(Plugin):
         return [
             GitRepo({
                 "type": "git",
-                "url": "https://github.com/OpenAgInitiative/rosserial_arduino_libs.git",
-                "branch": "diagnostics"
+                "url": "https://github.com/OpenAgInitiative/rosserial_arduino_libs.git"
             })
         ]
 
