@@ -26,6 +26,8 @@ def synthesize_firmware_module_info(modules, module_types):
         mod_info["class_name"] = mod_type["class_name"]
         if "dependencies" in mod_type:
             mod_info["dependencies"] = mod_type["dependencies"]
+        if "status_codes" in mod_type:
+            mod_info["status_codes"] = mod_type["status_codes"]
         # Update the arguments
         args = list(mod_info.get("arguments", []))
         type_args = list(mod_type.get("arguments", []))
