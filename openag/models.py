@@ -27,7 +27,7 @@ EnvironmentalDataPoint = Schema({
     Required("is_manual", default=False): bool,
     Required("is_desired"): bool,
     "value": object,
-    Required("timestamp"): float,
+    Required("timestamp"): Any(float, int),
 }, extra=REMOVE_EXTRA)
 EnvironmentalDataPoint.__doc__ = """
 An `EnvironmentalDataPoint` represents a single measurement or event in an
@@ -164,8 +164,8 @@ FirmwareOutput = Schema({
     "variable": Any(str, unicode),
     "categories": [SENSORS, CALIBRATION],
     "description": Any(str, unicode),
-    "accuracy": float,
-    "repeatability": float,
+    "accuracy": Any(float, int),
+    "repeatability": Any(float, int),
 })
 FirmwareOutput.__doc__ = """
 A :class:`~openag.models.FirmwareOutput` gives information about a single
