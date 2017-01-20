@@ -324,7 +324,7 @@ FirmwareModule = Schema({
     Required("_id"): safe_cpp_var,
     Required("type"): Any(str, unicode),
     "environment": Any(str, unicode),
-    "categories": [SENSORS, ACTUATORS, CALIBRATION]
+    "categories": [SENSORS, ACTUATORS, CALIBRATION],
     "arguments": [object],
     "inputs": {Extra: FirmwareInput},
     "outputs": {Extra: FirmwareOutput}
