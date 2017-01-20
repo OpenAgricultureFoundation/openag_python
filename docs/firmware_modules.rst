@@ -57,6 +57,12 @@ In addition the module should define a `module.json` file containing all of the
 metadata about the firmware module. In particular, it should be an instance of
 the :py:class:`openag.models.FirmwareModuleType` schema encoded as JSON.
 
+The system uses PlatformIO to compile Arduino sketches, so modules must also
+define a `library.json` file meeting the PlatformIO specifications. To work
+with our system, this file need only contain the fields `name` and `framework`.
+The `name` field should be the name of the module, and the `framework` field
+should have the value `arduino`.
+
 I/O Categories
 --------------
 
