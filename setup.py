@@ -28,7 +28,7 @@ setup(
         'couchdb>=1.0.1',
         'requests>=2.10.0',
         'voluptuous>=0.8.11',
-        'click>=6.6'
+        'click>=5'
     ],
     extras_require={
         "test": [
