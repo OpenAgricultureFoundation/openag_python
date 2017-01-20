@@ -3,7 +3,7 @@ __all__ = [
     "FirmwareModuleType", "Recipe", "SoftwareModule", "SoftwareModuleType"
 ]
 
-from .categories import SENSORS, ACTUATORS, CALIBRATION
+from .categories import SENSORS, ACTUATORS, CALIBRATION, all_categories
 from voluptuous import Schema, Required, Any, Extra, Optional, REMOVE_EXTRA
 from openag.utils import safe_cpp_var
 
@@ -130,7 +130,7 @@ objects are only ever stored in the `input` attribute of a
 .. py:attribute:: categories
 
     (list) A list of categories to which this inputs belongs. Must be a subset
-    of ["actuators", "calibration"] and defaults to ["actuators"]
+    of ["actuators", "calibration"]
 
 .. py:attribute:: description
 
@@ -186,7 +186,7 @@ These objects are only ever stored in the `output` attribute of a
 .. py:attribute:: categories
 
     (list) A list of categories to which this output belongs. Must be a subset
-    of ["sensors", "calibration"] and defaults to ["sensors"]
+    of ["sensors", "calibration"]
 
 .. py:attribute:: description
 
@@ -252,6 +252,7 @@ FirmwareModuleType = Schema({
     Required("header_file"): Any(str, unicode),
     Required("class_name"): Any(str, unicode),
     "description": Any(str, unicode),
+    "categories": [SENSORS, ACTUATORS, CALIBRATION],
     "arguments": [FirmwareArgument],
     "inputs": {Extra: FirmwareInput},
     "outputs": {Extra: FirmwareOutput},
@@ -288,6 +289,11 @@ for information on how to write firmware modules.
 
     (str) Description of the library
 
+.. py:attribute:: categories
+
+    (list) A list of categories to which this firmware module type belongs.
+    Must be a subset of ["sensors", "actuators", "calibration"].
+
 .. py:attribute:: arguments
 
     (list) A list of :class:`~openag.models.FirmwareArgument` objects
@@ -318,6 +324,7 @@ FirmwareModule = Schema({
     Required("_id"): safe_cpp_var,
     Required("type"): Any(str, unicode),
     "environment": Any(str, unicode),
+    "categories": [SENSORS, ACTUATORS, CALIBRATION]
     "arguments": [object],
     "inputs": {Extra: FirmwareInput},
     "outputs": {Extra: FirmwareOutput}
@@ -336,6 +343,13 @@ single physical sensor or actuator.
 
     (str, required) The ID of the :class:`~openag.models.Environment` on which
     this peripheral acts
+
+.. py:attribute:: categories
+
+    (list) A list of categories to which this firmware module belongs. Must be
+    a subset of ["sensors", "actuators", "calibration"]. If a value for this
+    attribute is provided, it will overwrite the value from the
+    :class:`~openag.models.FirmwareModuleType` for this module.
 
 .. py:attribute:: arguments
 
@@ -388,6 +402,7 @@ SoftwareModuleType = Schema({
     Required("package"): Any(str, unicode),
     Required("executable"): Any(str, unicode),
     "description": Any(str, unicode),
+    "categories": all_categories,
     Required("arguments", default=[]): [SoftwareArgument],
     Required("parameters", default={}): {Extra: Parameter},
     Required("inputs", default={}): {Extra: SoftwareInput},
@@ -412,6 +427,12 @@ packages.
 .. py:attribute:: description
 
     (str) Description of the library
+
+.. py:attribute:: categories
+
+    (list) A list of categories to which this software module type belongs.
+    Must be a subset of ["sensors", "actuators", "control", "calibration",
+    "persistence"].
 
 .. py:attribute:: arguments
 
@@ -457,6 +478,7 @@ SoftwareModule = Schema({
     Required("type"): Any(str, unicode),
     "namespace": Any(str, unicode),
     "environment": Any(str, unicode),
+    "categories": all_categories,
     "arguments": [object],
     "parameters": dict,
     "mappings": dict
@@ -481,6 +503,14 @@ A :class:`SoftwareModule` is a single instance of a
 
     (str) The ID of the :class:`~openag.models.Environment` on which this
     :class:`SoftwareModule` acts.
+
+.. py:attribute:: categories
+
+    (list) A list of categories to which this software module belongs. Must be
+    a subset of ["sensors", "actuators", "control", "calibration",
+    "persistence"]. If a value for this attribute is provided, it will
+    overwrite the value from the :class:`~openag.models.SoftwareModuleType` for
+    this module.
 
 .. py:attribute:: arguments
 
