@@ -17,7 +17,7 @@ from openag.utils import (
 )
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
-from openag.categories import all_categories, SENSORS, ACTUATORS, CALIBRATION
+from openag.categories import all_categories, SENSORS, ACTUATORS
 
 PLATFORMIO_CONFIG = "platformio.ini"
 
@@ -39,7 +39,7 @@ def project_dir_option(f):
 def codegen_options(f):
     f = click.option(
         "-c", "--categories", multiple=True, default=[SENSORS, ACTUATORS],
-        type=click.Choice([SENSORS, ACTUATORS, CALIBRATION]),
+        type=click.Choice(all_categories),
         help="A list of the categories of inputs and outputs that should "
         "be enabled"
     )(f)
@@ -336,7 +336,14 @@ def prune_unspecified_categories(modules, categories):
     Removes unspecified module categories.
     Mutates dictionary and returns it.
     """
+    res = {}
     for mod_name, mod_info in modules.items():
+        mod_categories = mod_info.get("categories", all_categories)
+        for category in categories:
+            if category in mod_categories:
+                break
+        else:
+            continue
         for input_name, input_info in mod_info["inputs"].items():
             for c in input_info["categories"]:
                 if c in categories:
@@ -349,7 +356,8 @@ def prune_unspecified_categories(modules, categories):
                     break
             else:
                 del mod_info["outputs"][output_name]
-    return modules
+        res[mod_name] = mod_info
+    return res
 
 def load_plugin(plugin_name):
     """

@@ -1,4 +1,4 @@
-from openag.categories import SENSORS, ACTUATORS
+from openag.categories import SENSORS, ACTUATORS, all_categories
 import os
 import re
 from urlparse import urlparse
@@ -50,6 +50,11 @@ def synthesize_firmware_module_info(modules, module_types):
                     )
                 )
         mod_info["arguments"] = args
+        # Update the categories
+        if not "categories" in mod_info:
+            mod_info["categories"] = mod_type.get(
+                "categories", all_categories
+            )
         # Update the inputs
         mod_inputs = mod_info.get("inputs", {})
         for input_name, type_input_info in mod_type.get("inputs", {}).items():
