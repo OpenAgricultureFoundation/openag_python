@@ -17,7 +17,7 @@ from openag.utils import (
 )
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
-from openag.categories import all_categories, SENSORS, ACTUATORS
+from openag.categories import all_categories, default_categories, SENSORS, ACTUATORS
 
 PLATFORMIO_CONFIG = "platformio.ini"
 
@@ -38,7 +38,7 @@ def project_dir_option(f):
 
 def codegen_options(f):
     f = click.option(
-        "-c", "--categories", multiple=True, default=[SENSORS, ACTUATORS],
+        "-c", "--categories", multiple=True, default=default_categories,
         type=click.Choice(all_categories),
         help="A list of the categories of inputs and outputs that should "
         "be enabled"
