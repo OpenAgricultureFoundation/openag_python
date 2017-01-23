@@ -453,6 +453,6 @@ def test_categories():
         res = runner.invoke(run_module)
         assert res.exit_code != 0, repr(res.exception)
 
-        # If we disable all control modules, the exception should go away
+        # If we disable all sensor modules, the exception should go away
         res = runner.invoke(run_module, ["-c", "actuators"])
         assert res.exit_code == 0, repr(res.exception)
