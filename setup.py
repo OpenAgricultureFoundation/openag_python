@@ -11,7 +11,7 @@ with open(readme_path) as f:
 
 setup(
     name='openag',
-    version='0.1.4',
+    version='0.1.5',
     author='Open Agriculture Initiative',
     description='Core Python package for the OpenAg software stack',
     long_description=readme,
@@ -28,7 +28,7 @@ setup(
         'couchdb>=1.0.1',
         'requests>=2.10.0',
         'voluptuous>=0.8.11',
-        'click>=6.6'
+        'click>=5'
     ],
     extras_require={
         "test": [

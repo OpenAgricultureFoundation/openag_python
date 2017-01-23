@@ -25,7 +25,12 @@ working as desired). The superclass also defines a :cpp:member:`status_msg`
 attribute which is a :cpp:class:`String` that the firmware module should use to
 describe the status of the module. This is generally an empty string when the
 status level is "ok" and an error message when the status level is "warn" or
-"error".
+"error". Finally, the superclass defines a :cpp:member:`status_code` attribute
+which is a :spp:class:`uint8_t` value that the firmware module should use to
+describe the status of the module. This serves the same purpose as the 
+:cpp:member:`status_msg` field. The `module.json` file (described in more
+detail below) should contain a dictionary explaining the meaning of all valid
+:cpp:member:`status_code` values for the module.
 
 In addition to these standard functions and attributes (which are all defined
 in the header file for the :cpp:class:`Module` class), the module must define a
@@ -51,6 +56,12 @@ message.
 In addition the module should define a `module.json` file containing all of the
 metadata about the firmware module. In particular, it should be an instance of
 the :py:class:`openag.models.FirmwareModuleType` schema encoded as JSON.
+
+The system uses PlatformIO to compile Arduino sketches, so modules must also
+define a `library.json` file meeting the PlatformIO specifications. To work
+with our system, this file need only contain the fields `name` and `framework`.
+The `name` field should be the name of the module, and the `framework` field
+should have the value `arduino`.
 
 I/O Categories
 --------------
