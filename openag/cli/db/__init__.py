@@ -191,6 +191,5 @@ def update_module_types():
         new_obj = update_record(FirmwareModuleType(obj), temp_folder)
         new_obj["_rev"] = obj["_rev"]
         if new_obj != obj:
-            print "Updating object"
             db[_id] = new_obj
     rmtree(temp_folder)
