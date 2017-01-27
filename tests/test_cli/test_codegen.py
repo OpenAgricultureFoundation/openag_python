@@ -428,3 +428,31 @@ void MyModule::update() {
 
         res = runner.invoke(run_module, ["-c", "calibration"])
         assert res.exit_code != 0, res.output
+
+def test_categories():
+    """ Test disabling categories """
+    runner = CliRunner()
+
+    with runner.isolated_filesystem():
+        res = runner.invoke(init)
+        assert res.exit_code == 0, repr(res.exception)
+
+        here = os.getcwd()
+        with open("module.h", "w+") as f:
+            f.write("This is a fake header file")
+        with open("module.cpp", "w+") as f:
+            f.write("This is a fake implementation file")
+        with open("module.json", "w+") as f:
+            json.dump({
+                "class_name": "MyModule",
+                "header_file": "module.h",
+                "categories": ["sensors"]
+            }, f)
+
+        # This should normally throw an error
+        res = runner.invoke(run_module)
+        assert res.exit_code != 0, repr(res.exception)
+
+        # If we disable all sensor modules, the exception should go away
+        res = runner.invoke(run_module, ["-c", "actuators"])
+        assert res.exit_code == 0, repr(res.exception)

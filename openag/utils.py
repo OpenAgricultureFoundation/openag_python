@@ -1,4 +1,4 @@
-from openag.categories import SENSORS, ACTUATORS
+from openag.categories import SENSORS, ACTUATORS, all_categories
 import os
 import re
 from urlparse import urlparse
@@ -18,7 +18,7 @@ def synthesize_firmware_module_info(modules, module_types):
     res = {}
     for mod_id, mod_info in modules.items():
         mod_info = dict(mod_info)
-        mod_type = dict(module_types[mod_info["type"]])
+        mod_type = module_types[mod_info["type"]]
         # Directly copy any fields only defined on the type
         if "repository" in mod_type:
             mod_info["repository"] = mod_type["repository"]
@@ -29,27 +29,15 @@ def synthesize_firmware_module_info(modules, module_types):
         if "status_codes" in mod_type:
             mod_info["status_codes"] = mod_type["status_codes"]
         # Update the arguments
-        args = list(mod_info.get("arguments", []))
-        type_args = list(mod_type.get("arguments", []))
-        if len(args) > len(type_args):
-            raise RuntimeError(
-                'Too many arguments specified for module "{}". (Got {}, '
-                'expected {})'.format(
-                    mod_id, len(args), len(type_args)
-                )
+        mod_info["arguments"] = process_args(
+            mod_id, mod_info.get("arguments", []), 
+            mod_type.get("arguments", [])
+        )
+        # Update the categories
+        if not "categories" in mod_info:
+            mod_info["categories"] = mod_type.get(
+                "categories", all_categories
             )
-        for i in range(len(args), len(type_args)):
-            arg_info = type_args[i]
-            if "default" in arg_info:
-                args.append(arg_info["default"])
-            else:
-                raise RuntimeError(
-                    'Not enough module arguments supplied for module "{}" '
-                    '(Got {}, expecting {})'.format(
-                        mod_id, len(args), len(type_args)
-                    )
-                )
-        mod_info["arguments"] = args
         # Update the inputs
         mod_inputs = mod_info.get("inputs", {})
         for input_name, type_input_info in mod_type.get("inputs", {}).items():
@@ -77,6 +65,93 @@ def synthesize_firmware_module_info(modules, module_types):
             mod_outputs[output_name] = mod_output_info
         mod_info["outputs"] = mod_outputs
         res[mod_id] = mod_info
+    return res
+
+def synthesize_software_module_info(modules, module_types):
+    """
+    This function takes as input a dictionary of `modules` (mapping module IDs
+    to :class:`~openag.models.SoftwareModule` objects) and a dictionary of
+    `module_types` (mapping module type IDs to
+    :class:`~openag.models.FirmwareModuleType` objects). For each module, it
+    synthesizes the information in that module and the corresponding module
+    type and returns all the results in a dictionary keyed on the ID of the
+    module.
+    """
+    res = {}
+    for mod_id, mod_info in modules.items():
+        mod_info = dict(mod_info)
+        mod_type = module_types[mod_info["type"]]
+
+        # Directly copy any fields only defined on the type
+        mod_info["package"] = mod_type["package"]
+        mod_info["executable"] = mod_type["executable"]
+        if not "categories" in mod_info:
+            mod_info["categories"] = mod_type.get(
+                "categories", all_categories
+            )
+        mod_info["inputs"] = mod_type["inputs"]
+        mod_info["outputs"] = mod_type["outputs"]
+
+        # Update the arguments
+        mod_info["arguments"] = process_args(
+            mod_id, mod_info.get("arguments", []), mod_type["arguments"]
+        )
+
+        # Update the parameters
+        mod_info["parameters"] = process_params(
+            mod_id, mod_info.get("parameters", {}), mod_type["parameters"]
+        )
+        res[mod_id] = mod_info
+    return res
+
+def process_args(mod_id, args, type_args):
+    """
+    Takes as input a list of arguments defined on a module and the information
+    about the required arguments defined on the corresponding module type.
+    Validates that the number of supplied arguments is valid and fills any
+    missing arguments with their default values from the module type
+    """
+    res = list(args)
+    if len(args) > len(type_args):
+        raise ValueError(
+            'Too many arguments specified for module "{}" (Got {}, expected '
+            '{})'.format(mod_id, len(args), len(type_args))
+        )
+    for i in range(len(args), len(type_args)):
+        arg_info = type_args[i]
+        if "default" in arg_info:
+            args.append(arg_info["default"])
+        else:
+            raise ValueError(
+                'Not enough module arguments supplied for module "{}" (Got '
+                '{}, expecting {})'.format(
+                    mod_id, len(args), len(type_args)
+                )
+            )
+    return args
+
+def process_params(mod_id, params, type_params):
+    """
+    Takes as input a dictionary of parameters defined on a module and the
+    information about the required parameters defined on the corresponding
+    module type. Validatates that are required parameters were supplied and
+    fills any missing parameters with their default values from the module
+    type. Returns a nested dictionary of the same format as the `type_params`
+    but with an additional key `value` on each inner dictionary that gives the
+    value of that parameter for this specific module
+    """
+    res = {}
+    for param_name, param_info in type_params.items():
+        val = params.get(param_name, param_info.get("default", None))
+        if val:
+            param_res = dict(param_info)
+            param_res["value"] = val
+            res[param_name] = param_res
+        elif type_params.get("required", False):
+            raise ValueError(
+                'Required parameter "{}" is not defined for module '
+                '"{}"'.format(param_name, mod_id)
+            )
     return res
 
 def index_by_id(docs):
