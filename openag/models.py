@@ -249,8 +249,8 @@ GitRepo = Schema({
 FirmwareModuleType = Schema({
     Required("_id"): safe_cpp_var,
     "repository": Any(PioRepo, GitRepo),
-    Required("header_file"): Any(str, unicode),
-    Required("class_name"): Any(str, unicode),
+    "header_file": Any(str, unicode),
+    "class_name": Any(str, unicode),
     "description": Any(str, unicode),
     "categories": [SENSORS, ACTUATORS, CALIBRATION],
     "arguments": [FirmwareArgument],
