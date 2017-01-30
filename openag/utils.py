@@ -143,7 +143,8 @@ def process_params(mod_id, params, type_params):
     res = {}
     for param_name, param_info in type_params.items():
         val = params.get(param_name, param_info.get("default", None))
-        if val:
+        # Check against explicit None (param could be explicitly False)
+        if val is not None:
             param_res = dict(param_info)
             param_res["value"] = val
             res[param_name] = param_res
