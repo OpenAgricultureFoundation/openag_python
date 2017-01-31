@@ -42,6 +42,9 @@ WATER_DISSOLVED_OXYGEN = EnvVar(
     "water_dissolved_oxygen", "A measure of the amount of oxygen in the water",
     "mg/L"
 )
+WATER_LEVEL_HIGH = EnvVar(
+    "water_level_high", "Is water above threshold?"
+)
 RECIPE_START = EnvVar("recipe_start", "Represents the start of a recipe")
 RECIPE_END = EnvVar("recipe_end", "Represents the end of a recipe")
 MARKER = EnvVar("marker", "Marks some user-defined event")
