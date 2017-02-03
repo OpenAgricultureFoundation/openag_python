@@ -6,6 +6,7 @@ import subprocess
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
+import tempfile
 
 from base import CodeGen
 from plugins import plugin_map
@@ -31,7 +32,7 @@ def board_option(f):
 
 def project_dir_option(f):
     f = click.option(
-        "-d", "--project-dir", default=".",
+        "-d", "--project-dir", default=tempfile.mkdtemp(),
         help="The directory in which the project should reside"
     )(f)
     return f
@@ -64,10 +65,7 @@ def codegen_options(f):
 def firmware():
     """ Tools for dealing with firmware modules """
 
-@firmware.command()
-@board_option
-@project_dir_option
-def init(board, project_dir, **kwargs):
+def init(board, project_dir):
     """ Initialize an OpenAg-based project """
     project_dir = os.path.abspath(project_dir)
 
@@ -90,9 +88,12 @@ def init(board, project_dir, **kwargs):
             )
     click.echo("OpenAg firmware project initialized!")
 
-@firmware.command()
+@firmware.command(name="init")
+@board_option
 @project_dir_option
-@codegen_options
+def init_cli(board, project_dir):
+    return init(board, project_dir)
+
 def run(
     categories, modules_file, project_dir, plugin, target,
     status_update_interval
@@ -225,6 +226,19 @@ def run(
     if subprocess.call(command, cwd=project_dir, env=env):
         raise click.ClickException("Compilation failed")
 
+@firmware.command(name="run")
+@project_dir_option
+@codegen_options
+def run_cli(
+    categories, modules_file, project_dir, plugin, target,
+    status_update_interval
+):
+    return run(
+        categories, modules_file, project_dir, plugin, target,
+        status_update_interval
+    )
+
+
 @firmware.command()
 @click.argument("arguments", nargs=-1)
 @board_option
@@ -330,6 +344,26 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
+
+@firmware.command()
+@project_dir_option
+@codegen_options
+@board_option
+def flash(
+    categories, modules_file, project_dir, plugin, target,
+    status_update_interval, board
+):
+    """
+    Flashes firmware to device (init + run).
+    Initializes a pio project and runs the result, flashing it to the device.
+    """
+   # First do a pio init.
+    init(board, project_dir)
+    run(
+        categories, modules_file, project_dir, plugin, target,
+        status_update_interval
+    )
+    print "Done"
 
 def prune_unspecified_categories(modules, categories):
     """
