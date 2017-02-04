@@ -36,6 +36,9 @@ setup(
             'httpretty>=0.8.14',
             'nose>=1.3.7',
             'coverage>=4.2'
+        ],
+        "flash": [
+            'platformio==2.11.2'
         ]
     },
     include_package_data=True,
