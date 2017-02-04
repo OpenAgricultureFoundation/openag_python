@@ -6,6 +6,7 @@ import subprocess
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
+import tempfile
 
 from base import CodeGen
 from plugins import plugin_map
@@ -13,7 +14,7 @@ from ..config import config
 from openag.couch import Server
 from openag.utils import (
     synthesize_firmware_module_info, make_dir_name_from_url, index_by_id,
-    parent_dirname
+    parent_dirname, merge_deep
 )
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
@@ -31,7 +32,7 @@ def board_option(f):
 
 def project_dir_option(f):
     f = click.option(
-        "-d", "--project-dir", default=".",
+        "-d", "--project-dir", default=tempfile.mkdtemp(),
         help="The directory in which the project should reside"
     )(f)
     return f
@@ -44,8 +45,10 @@ def codegen_options(f):
         "be enabled"
     )(f)
     f = click.option(
-        "-f", "--modules_file", type=click.File(),
-        help="JSON file describing the modules to include in the generated "
+        "-f", "--module_files",
+        type=click.File(),
+        multiple=True,
+        help="JSON file(s) describing the modules to include in the generated "
         "code"
     )(f)
     f = click.option(
@@ -64,10 +67,7 @@ def codegen_options(f):
 def firmware():
     """ Tools for dealing with firmware modules """
 
-@firmware.command()
-@board_option
-@project_dir_option
-def init(board, project_dir, **kwargs):
+def init(board, project_dir):
     """ Initialize an OpenAg-based project """
     project_dir = os.path.abspath(project_dir)
 
@@ -90,11 +90,14 @@ def init(board, project_dir, **kwargs):
             )
     click.echo("OpenAg firmware project initialized!")
 
-@firmware.command()
+@firmware.command(name="init")
+@board_option
 @project_dir_option
-@codegen_options
+def init_cli(board, project_dir):
+    return init(board, project_dir)
+
 def run(
-    categories, modules_file, project_dir, plugin, target,
+    categories, module_files, project_dir, plugin, target,
     status_update_interval
 ):
     """ Generate code for this project and run it """
@@ -113,7 +116,10 @@ def run(
 
     local_server = config["local_server"]["url"]
     server = Server(local_server) if local_server else None
-    modules_json = json.load(modules_file) if modules_file else {}
+    modules_json = (
+        merge_deep(json.load(file) for file in module_files)
+        if len(module_files) else {}
+    )
 
     if modules_json.get(FIRMWARE_MODULE_TYPE):
         for module in modules_json[FIRMWARE_MODULE_TYPE]:
@@ -225,6 +231,19 @@ def run(
     if subprocess.call(command, cwd=project_dir, env=env):
         raise click.ClickException("Compilation failed")
 
+@firmware.command(name="run")
+@project_dir_option
+@codegen_options
+def run_cli(
+    categories, module_files, project_dir, plugin, target,
+    status_update_interval
+):
+    return run(
+        categories, module_files, project_dir, plugin, target,
+        status_update_interval
+    )
+
+
 @firmware.command()
 @click.argument("arguments", nargs=-1)
 @board_option
@@ -330,6 +349,26 @@ def run_module(
         kwargs["modules_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
+
+@firmware.command()
+@project_dir_option
+@codegen_options
+@board_option
+def flash(
+    categories, module_files, project_dir, plugin, target,
+    status_update_interval, board
+):
+    """
+    Flashes firmware to device (init + run).
+    Initializes a pio project and runs the result, flashing it to the device.
+    """
+   # First do a pio init.
+    init(board, project_dir)
+    run(
+        categories, module_files, project_dir, plugin, target,
+        status_update_interval
+    )
+    print "Done"
 
 def prune_unspecified_categories(modules, categories):
     """
