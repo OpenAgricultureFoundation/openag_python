@@ -14,7 +14,7 @@ from ..config import config
 from openag.couch import Server
 from openag.utils import (
     synthesize_firmware_module_info, make_dir_name_from_url, index_by_id,
-    parent_dirname
+    parent_dirname, merge_deep
 )
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
@@ -45,8 +45,10 @@ def codegen_options(f):
         "be enabled"
     )(f)
     f = click.option(
-        "-f", "--modules_file", type=click.File(),
-        help="JSON file describing the modules to include in the generated "
+        "-f", "--module_files",
+        type=click.File(),
+        multiple=True,
+        help="JSON file(s) describing the modules to include in the generated "
         "code"
     )(f)
     f = click.option(
@@ -95,7 +97,7 @@ def init_cli(board, project_dir):
     return init(board, project_dir)
 
 def run(
-    categories, modules_file, project_dir, plugin, target,
+    categories, module_files, project_dir, plugin, target,
     status_update_interval
 ):
     """ Generate code for this project and run it """
@@ -114,7 +116,10 @@ def run(
 
     local_server = config["local_server"]["url"]
     server = Server(local_server) if local_server else None
-    modules_json = json.load(modules_file) if modules_file else {}
+    modules_json = (
+        merge_deep(json.load(file) for file in module_files)
+        if len(module_files) else {}
+    )
 
     if modules_json.get(FIRMWARE_MODULE_TYPE):
         for module in modules_json[FIRMWARE_MODULE_TYPE]:
@@ -230,11 +235,11 @@ def run(
 @project_dir_option
 @codegen_options
 def run_cli(
-    categories, modules_file, project_dir, plugin, target,
+    categories, module_files, project_dir, plugin, target,
     status_update_interval
 ):
     return run(
-        categories, modules_file, project_dir, plugin, target,
+        categories, module_files, project_dir, plugin, target,
         status_update_interval
     )
 
@@ -350,7 +355,7 @@ def run_module(
 @codegen_options
 @board_option
 def flash(
-    categories, modules_file, project_dir, plugin, target,
+    categories, module_files, project_dir, plugin, target,
     status_update_interval, board
 ):
     """
@@ -360,7 +365,7 @@ def flash(
    # First do a pio init.
     init(board, project_dir)
     run(
-        categories, modules_file, project_dir, plugin, target,
+        categories, module_files, project_dir, plugin, target,
         status_update_interval
     )
     print "Done"
