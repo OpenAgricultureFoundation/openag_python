@@ -6,7 +6,6 @@ import subprocess
 from importlib import import_module
 from voluptuous import Invalid
 from ConfigParser import ConfigParser
-import tempfile
 
 from base import CodeGen
 from plugins import plugin_map
@@ -32,7 +31,7 @@ def board_option(f):
 
 def project_dir_option(f):
     f = click.option(
-        "-d", "--project-dir", default=tempfile.mkdtemp(),
+        "-d", "--project-dir", default=".",
         help="The directory in which the project should reside"
     )(f)
     return f
