@@ -66,8 +66,11 @@ def codegen_options(f):
 def firmware():
     """ Tools for dealing with firmware modules """
 
-def init(board, project_dir):
-    """ Initialize an OpenAg-based project """
+def _init(board, project_dir):
+    """
+    Initialize an OpenAg-based project.
+    Internal function we use for both init and flash commands.
+    """
     project_dir = os.path.abspath(project_dir)
 
     # Initialize the platformio project
@@ -89,17 +92,21 @@ def init(board, project_dir):
             )
     click.echo("OpenAg firmware project initialized!")
 
-@firmware.command(name="init")
+@firmware.command()
 @board_option
 @project_dir_option
-def init_cli(board, project_dir):
-    return init(board, project_dir)
+def init(board, project_dir):
+    """ Initialize an OpenAg-based project """
+    return _init(board, project_dir)
 
-def run(
+def _run(
     categories, module_files, project_dir, plugin, target,
     status_update_interval
 ):
-    """ Generate code for this project and run it """
+    """
+    Generate code for this project and run it.
+    Internal function we use for both run and flash commands.
+    """
     project_dir = os.path.abspath(project_dir)
 
     # Make sure the project has been initialized
@@ -230,14 +237,15 @@ def run(
     if subprocess.call(command, cwd=project_dir, env=env):
         raise click.ClickException("Compilation failed")
 
-@firmware.command(name="run")
+@firmware.command()
 @project_dir_option
 @codegen_options
-def run_cli(
+def run(
     categories, module_files, project_dir, plugin, target,
     status_update_interval
 ):
-    return run(
+    """ Generate code for this project and run it """
+    return _run(
         categories, module_files, project_dir, plugin, target,
         status_update_interval
     )
@@ -361,9 +369,8 @@ def flash(
     Flashes firmware to device (init + run).
     Initializes a pio project and runs the result, flashing it to the device.
     """
-   # First do a pio init.
-    init(board, project_dir)
-    run(
+    _init(board, project_dir)
+    _run(
         categories, module_files, project_dir, plugin, target,
         status_update_interval
     )
