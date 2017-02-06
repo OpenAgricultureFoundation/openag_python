@@ -95,7 +95,7 @@ def _init(board, project_dir):
 @firmware.command()
 @board_option
 @project_dir_option
-def init(board, project_dir):
+def init(board, project_dir, **kwargs):
     """ Initialize an OpenAg-based project """
     return _init(board, project_dir)
 
