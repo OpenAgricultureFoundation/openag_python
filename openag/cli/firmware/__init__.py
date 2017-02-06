@@ -353,7 +353,7 @@ def run_module(
     with open(modules_file, "w") as f:
         json.dump(modules, f)
     with open(modules_file, "r") as f:
-        kwargs["modules_file"] = f
+        kwargs["module_files"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
 
