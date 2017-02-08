@@ -45,6 +45,12 @@ WATER_DISSOLVED_OXYGEN = EnvVar(
 WATER_LEVEL_HIGH = EnvVar(
     "water_level_high", "Is water above threshold?"
 )
+NUTRIENT_FLORA_DUO_A = EnvVar(
+    "nutrient_flora_duo_a", "FloraDuo nutrient A"
+)
+NUTRIENT_FLORA_DUO_B = EnvVar(
+    "nutrient_flora_duo_b", "FloraDuo nutrient B"
+)
 RECIPE_START = EnvVar("recipe_start", "Represents the start of a recipe")
 RECIPE_END = EnvVar("recipe_end", "Represents the end of a recipe")
 MARKER = EnvVar("marker", "Marks some user-defined event")
