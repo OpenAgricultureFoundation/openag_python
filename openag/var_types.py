@@ -23,6 +23,9 @@ AIR_HUMIDITY = EnvVar(
 AIR_CARBON_DIOXIDE = EnvVar(
     "air_carbon_dioxide", "The amount of Carbon Dioxide in the air", "ppm"
 )
+AIR_FLUSH_ON = EnvVar(
+    "air_flush_on", "Turn on air flush (off by default)"
+)
 WATER_TEMPERATURE = EnvVar(
     "water_temperature", "Temperature of the water in degrees Celcius",
     "degrees C"
