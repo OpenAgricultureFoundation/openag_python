@@ -46,7 +46,6 @@ def codegen_options(f):
     f = click.option(
         "-f", "--param_file",
         type=click.File(),
-        multiple=True,
         help="""YAML or JSON file describing the firmware module configuration to be flashed.
         This is the same file that is used for rosparam in the launch file."""
         "code"
