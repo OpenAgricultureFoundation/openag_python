@@ -126,13 +126,17 @@ def _run(
         params = yaml.load(param_file)
     else:
         raise ValueError("Param file must be YAML or JSON")
+
+    firmware_type_params = params.get(FIRMWARE_MODULE_TYPE, [])
+    firmware_params = params.get(FIRMWARE_MODULE_TYPE, [])
+
     firmware_types = [
         FirmwareModuleType(record)
-        for record in params[FIRMWARE_MODULE_TYPE]
+        for record in firmware_type_params
     ]
     firmware = [
         FirmwareModule(record)
-        for record in params[FIRMWARE_MODULE]
+        for record in firmware_params
     ]
 
     # Check for working modules in the lib folder
