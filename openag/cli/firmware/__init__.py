@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import yaml
 import click
 import subprocess
 from importlib import import_module
@@ -10,10 +11,9 @@ from ConfigParser import ConfigParser
 from base import CodeGen
 from plugins import plugin_map
 from ..config import config
-from openag.couch import Server
 from openag.utils import (
     synthesize_firmware_module_info, make_dir_name_from_url, index_by_id,
-    parent_dirname, merge_deep
+    parent_dirname
 )
 from openag.models import FirmwareModuleType, FirmwareModule
 from openag.db_names import FIRMWARE_MODULE_TYPE, FIRMWARE_MODULE
@@ -44,10 +44,11 @@ def codegen_options(f):
         "be enabled"
     )(f)
     f = click.option(
-        "-f", "--module_files",
+        "-f", "--param_file",
         type=click.File(),
         multiple=True,
-        help="JSON file(s) describing the modules to include in the generated "
+        help="""YAML or JSON file describing the firmware module configuration to be flashed.
+        This is the same file that is used for rosparam in the launch file."""
         "code"
     )(f)
     f = click.option(
@@ -100,7 +101,7 @@ def init(board, project_dir, **kwargs):
     return _init(board, project_dir)
 
 def _run(
-    categories, module_files, project_dir, plugin, target,
+    categories, param_file, project_dir, plugin, target,
     status_update_interval
 ):
     """
@@ -117,32 +118,23 @@ def _run(
             "please use the `openag firmware init` command"
         )
 
-    firmware_types = []
-    firmware = []
-
-    local_server = config["local_server"]["url"]
-    server = Server(local_server) if local_server else None
-    modules_json = (
-        merge_deep(json.load(file) for file in module_files)
-        if len(module_files) else {}
-    )
-
-    if modules_json.get(FIRMWARE_MODULE_TYPE):
-        for module in modules_json[FIRMWARE_MODULE_TYPE]:
-            click.echo(
-                "Parsing firmware module type \"{}\" from modules file"
-                .format(module["_id"])
-            )
-            firmware_types.append(FirmwareModuleType(module))
-    elif server:
-        db = server[FIRMWARE_MODULE_TYPE]
-        for _id in db:
-            if _id.startswith("_"):
-                continue
-            click.echo(
-                "Parsing firmware module type \"{}\" from server".format(_id)
-            )
-            firmware_types.append(FirmwareModuleType(db[_id]))
+    # @TODO in future we should pass in module config files as a thing
+    # separate from the param file.
+    name, ext = os.path.splitext(param_file.name)
+    if ext == ".json":
+        params = json.load("")
+    elif ext in (".yaml", ".yml"):
+        params = yaml.load(param_file)
+    else:
+        raise ValueError("Param file must be YAML or JSON")
+    firmware_types = [
+        FirmwareModuleType(record)
+        for record in params[FIRMWARE_MODULE_TYPE]
+    ]
+    firmware = [
+        FirmwareModule(record)
+        for record in params[FIRMWARE_MODULE]
+    ]
 
     # Check for working modules in the lib folder
     # Do this second so project-local values overwrite values from the server
@@ -163,22 +155,6 @@ def _run(
                     # Patch in id if id isn't present
                     doc["_id"] = parent_dirname(config_path)
                 firmware_types.append(FirmwareModuleType(doc))
-
-    # Get the list of modules
-    if modules_json.get(FIRMWARE_MODULE):
-        for module in modules_json[FIRMWARE_MODULE]:
-            click.echo(
-                "Parsing firmware module \"{}\" from modules file"
-                .format(module["_id"])
-            )
-            firmware.append(FirmwareModule(module))
-    elif server:
-        db = server[FIRMWARE_MODULE]
-        for _id in db:
-            if _id.startswith("_"):
-                continue
-            click.echo("Parsing firmware module \"{}\" from server".format(_id))
-            firmware.append(FirmwareModule(db[_id]))
 
     if len(firmware) == 0:
         click.echo("Warning: no modules specified for the project")
@@ -241,12 +217,12 @@ def _run(
 @project_dir_option
 @codegen_options
 def run(
-    categories, module_files, project_dir, plugin, target,
+    categories, param_file, project_dir, plugin, target,
     status_update_interval
 ):
     """ Generate code for this project and run it """
     return _run(
-        categories, module_files, project_dir, plugin, target,
+        categories, param_file, project_dir, plugin, target,
         status_update_interval
     )
 
@@ -353,7 +329,7 @@ def run_module(
     with open(modules_file, "w") as f:
         json.dump(modules, f)
     with open(modules_file, "r") as f:
-        kwargs["module_files"] = [f]
+        kwargs["param_file"] = f
         # Run the project
         ctx.invoke(run, **kwargs)
 
@@ -362,7 +338,7 @@ def run_module(
 @codegen_options
 @board_option
 def flash(
-    categories, module_files, project_dir, plugin, target,
+    categories, param_file, project_dir, plugin, target,
     status_update_interval, board
 ):
     """
@@ -371,7 +347,7 @@ def flash(
     """
     _init(board, project_dir)
     _run(
-        categories, module_files, project_dir, plugin, target,
+        categories, param_file, project_dir, plugin, target,
         status_update_interval
     )
     print "Done"

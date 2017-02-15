@@ -219,19 +219,3 @@ def safe_cpp_var(s):
     # Prefix with underscore if what is left is a reserved word
     s = "_" + s if s in CPP_KEYWORDS or s[0].isdigit() else s
     return s
-
-def merge_deep(dicts):
-    """
-    Merge 2 dictionaries recursively, returning a new dictionary.
-    Any dict field will be merged recursively. For all other fields, the
-    right-hand field wins.
-    """
-    target = {}
-    for d in dicts:
-        for k, v in d.iteritems():
-            if (isinstance(v, dict) and
-                isinstance(target.get(k, None), dict)):
-                target[k] = merge_deep((target[k], v))
-            else:
-                target[k] = v
-    return target
