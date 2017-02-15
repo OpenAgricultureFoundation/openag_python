@@ -28,7 +28,8 @@ setup(
         'couchdb>=1.0.1',
         'requests>=2.10.0',
         'voluptuous>=0.8.11',
-        'click>=5'
+        'click>=5',
+        'PyYAML>=3.12'
     ],
     extras_require={
         "test": [
