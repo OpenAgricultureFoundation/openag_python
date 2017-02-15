@@ -121,7 +121,7 @@ def _run(
     # separate from the param file.
     name, ext = os.path.splitext(param_file.name)
     if ext == ".json":
-        params = json.load("")
+        params = json.load(param_file)
     elif ext in (".yaml", ".yml"):
         params = yaml.load(param_file)
     else:
