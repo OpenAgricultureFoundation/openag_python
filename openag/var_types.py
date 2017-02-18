@@ -1,118 +1,120 @@
 class EnvVar:
     items = {}
 
-    def __init__(self, name, description, units=None, categories=None):
+    def __init__(self, name, description, units=None, groups=None):
         self.name = name
         self.__doc__ = description
         self.units = units
         self.items[self.name] = self
-        self.categories = categories or []
+        # Assign one or more groups to this environmental variable.
+        # Can be used to create collections of related variables.
+        self.groups = groups or []
 
     def __str__(self):
         return self.name
 
-CATEGORY_ENVIRONMENT = "environment"
-CATEGORY_USER = "user"
-CATEGORY_RECIPE = "recipe"
-CATEGORY_CAMERA = "camera"
+GROUP_ENVIRONMENT = "environment"
+GROUP_USER = "user"
+GROUP_RECIPE = "recipe"
+GROUP_CAMERA = "camera"
 
 AIR_TEMPERATURE = EnvVar(
     "air_temperature", "Temperature of the air in degrees Celcius", "degrees C",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 AIR_HUMIDITY = EnvVar(
     "air_humidity",
     "A measure of the concentration of water in the air relative to the "
     "maximum concentration at the current temperature", "percent relative",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 AIR_CARBON_DIOXIDE = EnvVar(
     "air_carbon_dioxide", "The amount of Carbon Dioxide in the air",
     units="ppm",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 AIR_FLUSH_ON = EnvVar(
     "air_flush_on", "Turn on air flush (off by default)",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_TEMPERATURE = EnvVar(
     "water_temperature", "Temperature of the water in degrees Celcius",
     units="degrees C",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_POTENTIAL_HYDROGEN = EnvVar(
     "water_potential_hydrogen", "Potential Hydrogen of the water",
     units="pH",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_ELECTRICAL_CONDUCTIVITY = EnvVar(
     "water_electrical_conductivity", "Electrical conductivity of the water",
     units="uS/cm",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_OXIDATION_REDUCTION_POTENTIAL = EnvVar(
     "water_oxidation_reduction_potential",
     "Oxidation-reduction potential of the water",
     units="mV",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_DISSOLVED_OXYGEN = EnvVar(
     "water_dissolved_oxygen", "A measure of the amount of oxygen in the water",
     units="mg/L",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 WATER_LEVEL_HIGH = EnvVar(
     "water_level_high", "Is water above threshold?",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 NUTRIENT_FLORA_DUO_A = EnvVar(
     "nutrient_flora_duo_a", "FloraDuo nutrient A",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 NUTRIENT_FLORA_DUO_B = EnvVar(
     "nutrient_flora_duo_b", "FloraDuo nutrient B",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 LIGHT_ILLUMINANCE = EnvVar(
     "light_illuminance", "The intensity of light falling at the plants",
     units="lux",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 LIGHT_INTENSITY_RED = EnvVar(
     "light_intensity_red", "The intensity setting for light panel",
     units="percent relative",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 LIGHT_INTENSITY_BLUE = EnvVar(
     "light_intensity_blue", "The intensity setting for light panel",
     units="percent relative",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 LIGHT_INTENSITY_WHITE = EnvVar(
     "light_intensity_white", "The intensity setting for light panel",
     units="percent relative",
-    categories=[CATEGORY_ENVIRONMENT]
+    groups=[GROUP_ENVIRONMENT]
 )
 RECIPE_START = EnvVar(
     "recipe_start", "Represents the start of a recipe",
-    categories=[CATEGORY_RECIPE]
+    groups=[GROUP_RECIPE]
 )
 RECIPE_END = EnvVar(
     "recipe_end", "Represents the end of a recipe",
-    categories=[CATEGORY_RECIPE]
+    groups=[GROUP_RECIPE]
 )
 MARKER = EnvVar(
     "marker", "Marks some user-defined event",
-    categories=[CATEGORY_USER]
+    groups=[GROUP_USER]
 )
 AERIAL_IMAGE = EnvVar(
     "aerial_image", "Image from above the tray looking down on the plants",
     units="png",
-    categories=[CATEGORY_USER]
+    groups=[GROUP_USER]
 )
 FRONTAL_IMAGE = EnvVar(
     "frontal_image", "Image from in front of the tray looking towards the "
     "plants",
     units="png",
-    categories=[CATEGORY_USER]
+    groups=[GROUP_USER]
 )
