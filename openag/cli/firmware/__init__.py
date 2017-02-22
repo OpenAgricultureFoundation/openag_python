@@ -128,7 +128,7 @@ def _run(
         raise ValueError("Param file must be YAML or JSON")
 
     firmware_type_params = params.get(FIRMWARE_MODULE_TYPE, [])
-    firmware_params = params.get(FIRMWARE_MODULE_TYPE, [])
+    firmware_params = params.get(FIRMWARE_MODULE, [])
 
     firmware_types = [
         FirmwareModuleType(record)
