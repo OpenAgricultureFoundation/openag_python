@@ -110,11 +110,11 @@ MARKER = EnvVar(
 AERIAL_IMAGE = EnvVar(
     "aerial_image", "Image from above the tray looking down on the plants",
     units="png",
-    groups=[GROUP_USER]
+    groups=[GROUP_CAMERA]
 )
 FRONTAL_IMAGE = EnvVar(
     "frontal_image", "Image from in front of the tray looking towards the "
     "plants",
     units="png",
-    groups=[GROUP_USER]
+    groups=[GROUP_CAMERA]
 )
