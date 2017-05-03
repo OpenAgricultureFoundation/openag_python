@@ -39,7 +39,7 @@ setup(
             'coverage>=4.2'
         ],
         "flash": [
-            'platformio==2.11.2'
+            'platformio==3.3.0'
         ]
     },
     include_package_data=True,
