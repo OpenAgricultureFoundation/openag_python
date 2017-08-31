@@ -3,6 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+NOTE: This stand-alone library is now deprecated.  The contents have been moved into the 
+'new openag_lib directory <https://github.com/OpenAgInitiative/openag_brain/tree/develop/src/openag_lib>' inside the openag_brain ROS package.   @rbaynes 2017-08-31
+
 openag_python
 =============
 
